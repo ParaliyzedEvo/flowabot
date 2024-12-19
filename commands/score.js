@@ -54,9 +54,9 @@ module.exports = {
                 let b = osu.parse_beatmap_url_sync(arg, false);
                 if(b)
                     options.beatmap_id = b;
-				let s = osu.parse_score_url_sync(arg, false);
-				if(s)
-					options.score_id = s;
+								let s = osu.parse_score_url_sync(arg, false);
+				                if(s)
+					                    options.score_id = s;
             });
 
             if(score_user != '*')
