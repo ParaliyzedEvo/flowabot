@@ -777,6 +777,11 @@ async function prepareBeatmap(){
 }
 
 async function calculate_ur(obj) {
+    // Validate beatmap_path
+    if (!obj.beatmap_path) {
+        throw new Error("Missing required property: beatmap_path.");
+    }
+
     beatmap_path = obj.beatmap_path;
     options = obj.options;
     enabled_mods = obj.enabled_mods;

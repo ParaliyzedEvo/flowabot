@@ -7,35 +7,47 @@ const { fork } = require('child_process');
 const config = require('../config.json');
 const { calculate_ur } = require("./ur_processor");
 
-function calculateUr(options){
-	return new Promise(async (resolve, reject) => {
+async function calculateUr(options) {
+    try {
+        // Validate critical inputs
+        if (!options.score_id) {
+            throw new Error("Missing required property: score_id.");
+        }
+        if (!config.replay_path) {
+            throw new Error("Missing configuration for replay_path.");
+        }
 
-		let replay_path = path.resolve(config.replay_path, `${options.score_id}.osr`);
-		let replay_exists = await fs.stat(replay_path).then(() => true, () => false);
+        // Construct the replayPath
+        const replayPath = path.resolve(config.replay_path, `${options.score_id}.osr`);
+        console.log("replayPath:", replayPath);
 
-		if(!replay_exists) {
-			const response = await axios.get(`https://osu.ppy.sh/api/v2/scores/${options.score_id}/download`, {
-				responseType: 'arraybuffer',
-				headers: {
-					'Authorization': 'Bearer ' + options.access_token,
-					'Content-Type': 'application/x-osu-replay'
-				}
-			}).catch(error => console.log(error));
+        await fs.mkdir(config.replay_path, { recursive: true });
 
-			const replay_raw = response.data
-			//const replay_raw = Buffer.from(response.data.content, "base64");
+        let replayExists = await fs.stat(replayPath).then(() => true, () => false);
+        if (!replayExists) {
+            const response = await axios.get(
+                `https://osu.ppy.sh/api/v2/scores/${options.score_id}/download`,
+                {
+                    responseType: "arraybuffer",
+                    headers: {
+                        Authorization: `Bearer ${options.access_token}`,
+                    },
+                }
+            );
 
-			await fs.writeFile(path.resolve(config.replay_path, `${options.score_id}.osr`), replay_raw, { encoding: 'binary' });
-		}
+            if (!response || response.status !== 200) {
+                throw new Error("Failed to download replay data.");
+            }
 
-		const ur = await calculate_ur({
-			beatmap_path: path.resolve(config.osu_cache_path, `${options.beatmap_id}.osu`),
-			options,
-			enabled_mods: options.mods
-		})
-		
-		resolve({ ur: ur });
-	});
+            const replayRaw = response.data;
+            await fs.writeFile(replayPath, replayRaw, { encoding: "binary" });
+        }
+
+        // Additional processing...
+    } catch (error) {
+        console.error("Error in calculateUr:", error);
+        throw error;
+    }
 }
 
 module.exports = {

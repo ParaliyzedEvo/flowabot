@@ -1692,9 +1692,33 @@ function processBeatmap(osuContents){
 
     // Set stacking offset
     beatmap.hitObjects.forEach((hitObject, i) => {
-        hitObject.StackOffset = hitObject.StackHeight * beatmap.Scale * -6.4;
-        hitObject.position = [hitObject.position[0] + hitObject.StackOffset, hitObject.position[1] + hitObject.StackOffset];
-		hitObject.endPosition = [hitObject.endPosition[0] + hitObject.StackOffset, hitObject.endPosition[1] + hitObject.StackOffset];
+        if (
+        !hitObject.position ||
+        !Array.isArray(hitObject.position) ||
+        hitObject.position.length < 2
+    ) {
+        console.error(`Missing or invalid position for hitObject at index ${i}`, hitObject);
+        return; // Skip this object
+    }
+    if (
+        !hitObject.endPosition ||
+        !Array.isArray(hitObject.endPosition) ||
+        hitObject.endPosition.length < 2
+    ) {
+        console.error(`Missing or invalid endPosition for hitObject at index ${i}`, hitObject);
+        return; // Skip this object
+    }
+
+    // Apply stacking offset
+    hitObject.StackOffset = hitObject.StackHeight * beatmap.Scale * -6.4;
+    hitObject.position = [
+        hitObject.position[0] + hitObject.StackOffset,
+        hitObject.position[1] + hitObject.StackOffset,
+    ];
+    hitObject.endPosition = [
+        hitObject.endPosition[0] + hitObject.StackOffset,
+        hitObject.endPosition[1] + hitObject.StackOffset,
+    ];
 
         if(hitObject.objectName == "slider"){
             for(let x = 0; x < hitObject.SliderDots.length; x++){
