@@ -1164,7 +1164,7 @@ async function getUserId(u){
 }
 
 module.exports = {
-    init: async function(client, client_id, client_secret, _last_beatmap, api_key){
+    init: async function(client, client_id, client_secret, _last_beatmap){
 		discord_client = client;
 		last_beatmap = _last_beatmap;
 
@@ -1172,17 +1172,6 @@ module.exports = {
             await getAccessToken();
             updateTrackedUsers();
 		}
-
-        if(api_key){
-	        settings.api_key = api_key;
-	        apiv1 = axios.create({
-	            baseURL: 'https://osu.ppy.sh/api',
-	            params: {
-	                k: api_key
-	            }
-	        });
-        }
-
     },
 
     sanitize_mods: function(mods) {
@@ -2776,36 +2765,34 @@ module.exports = {
     },
 
     track_user: function(channel_id, user, top, cb){
-        apiv1.get('/get_user', { params: { u: user } }).then(response => {
+        api.get(`/users/${user}/osu`).then(response => {
             response = response.data;
 
-            if(response.length > 0){
-                let user = response[0];
-                if(user.user_id in tracked_users){
-                    if(tracked_users[user.user_id].channels.includes(channel_id)){
-                        cb(`${user.username} is already being tracked in this channel. 🤡`);
-                    }else{
-                        tracked_users[user.user_id].channels.push(channel_id);
-                        tracked_users[user.user_id].top = top;
+			            if(response.length == 0){
+				            cb(`Couldn't find user \`${user}\`. 😔`);
+				            return;
+			            }
+                        let user = response;
+			            if(user.id in tracked_users){
+				                if(tracked_users[user.id].channels.includes(channel_id)){
+					                    cb(`${user.username} is already being tracked in this channel. 🤡`);
+				                }else{
+					                    tracked_users[user.id].channels.push(channel_id);
+					                    tracked_users[user.id].top = top;
+										
+                                        delete top_plays[user.id];
 
-                        delete top_plays[user.user_id];
-
-                        cb(null, `Now tracking ${user.username}'s top ${top} in this channel. 🤓`);
-                    }
-                }else{
-                    tracked_users[user.user_id] = {
-                        top: top,
-                        channels: [channel_id]
-                    };
-
-                    cb(null, `Now tracking ${user.username}'s top ${top}. 🤓`);
-                }
-
-                helper.setItem('tracked_users', JSON.stringify(tracked_users));
-                helper.setItem('top_plays', JSON.stringify(top_plays));
-            }else{
-                cb(`Couldn't find user \`${user}\`. 😔`);
-            }
+                                        cb(null, `Now tracking ${user.username}'s top ${top} in this channel. 🤓`);
+				                }
+			            }else{
+				                tracked_users[user.id] = {
+					                    top: top,
+					                    channels: [channel_id]
+				                };
+								
+				                cb(null, `Now tracking ${user.username}'s top ${top}. 🤓`);
+			            }
+					
 		}).catch(err => {
 			if(err.status == 404)
 				cb("Couldn't find user. 😔");
@@ -2818,36 +2805,41 @@ module.exports = {
     },
 
     untrack_user: function(channel_id, user, cb){
-        apiv1.get('/get_user', { params: { u: user } }).then(response => {
+        api.get(`/users/${user}/osu`).then(response => {
             response = response.data;
 
-            if(response.length > 0){
-                let user = response[0];
-                if(user.user_id in tracked_users){
-                    if(tracked_users[user.user_id].channels.includes(channel_id)){
-                        tracked_users[user.user_id].channels
-                        = tracked_users[user.user_id].channels.filter(a => a != channel_id);
-
-                        if(tracked_users[user.user_id].channels.length > 0){
-                            cb(null, `Stopped tracking ${user.username} in this channel. 😔`);
-                        }else{
-                            cb(null, `Stopped tracking ${user.username}. 😔`);
-
-                            delete tracked_users[user.user_id];
-                            delete top_plays[user.user_id];
-                        }
-
-                        helper.setItem('tracked_users', JSON.stringify(tracked_users));
-                        helper.setItem('top_plays', JSON.stringify(top_plays));
-                    }else{
-                        cb(`${user.username} is not being tracked in this channel. 🤡`);
-                    }
-                }else{
-                    cb(`${user.username} is not being tracked. 🤡`);
-                }
-            }else{
-                cb(`Couldn't find \`${user}\`. 😔`);
-            }
+			            if(response.length == 0){
+				                cb(`Couldn't find user \`${user}\`. 😔`);
+				                return;
+			            }
+						
+			            let user = response;	
+			            if(user.id in tracked_users){
+				                if(tracked_users[user.id].channels.includes(channel_id)){
+					                    tracked_users[user.id].channels
+					                    = tracked_users[user.id].channels.filter(a => a != channel_id);
+					                    if(tracked_users[user.id].channels.length > 0){
+						                    cb(null, `Stopped tracking ${user.username} in this channel. 😔`);
+											
+					                    }else{
+											
+						                    cb(null, `Stopped tracking ${user.username}. 😔`);
+											
+						                    delete tracked_users[user.id];
+						                    delete top_plays[user.id];
+											
+					                    }
+										
+					                    helper.setItem('tracked_users', JSON.stringify(tracked_users));
+					                    helper.setItem('top_plays', JSON.stringify(top_plays));
+				                }else{
+									
+					                    cb(`${user.username} is not being tracked in this channel. 🤡`);
+				                }
+			            }else{
+				                cb(`${user.username} is not being tracked. 🤡`);
+			            }
+						
         }).catch(err => {
 			if(err.status == 404)
 				cb("Couldn't find user. 😔");
