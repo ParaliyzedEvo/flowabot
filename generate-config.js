@@ -67,7 +67,7 @@
         default_value = config.replay_path;
 	
     console.log('');
-    value = readline.question(`Path where to cache .osr files [${chalk.green(default_value)}]: `);
+    value = readline.question(`Path where to cache .osr replay files [${chalk.green(default_value)}]: `);
 	
     if(!value)
         value = default_value;
@@ -250,35 +250,45 @@
 
     default_value = 'none';
 
-    if(config.credentials.twitch_client_id)
+    if (config.credentials.twitch_client_id) {
         default_value = config.credentials.twitch_client_id;
+    }
 
-    do{
+    do {
         console.log('');
         console.log(`(Optional) A Twitch Client ID is needed for the Twitch commands to work. You can get one here: ${chalk.blueBright('https://dev.twitch.tv/console/apps')}.`);
-        value = readline.question(`Twitch Client ID [${chalk.green(default_value)}]: `);
+        let client_id = readline.question(`Twitch Client ID [${chalk.green(default_value)}]: `);
 
-        if(!value)
-            value = default_value;
+        if (!client_id) client_id = default_value;
 
-        valid_key = true;
+        config.credentials.twitch_client_id = client_id === 'none' ? '' : client_id;
 
-        if(value != 'none'){
-            try{
-                await axios.get('https://api.twitch.tv/helix/streams', { headers: { 'Client-ID': value } });
-            }catch(e){
-                valid_key = false;
-            }
+    default_value = 'none';
+	
+        console.log('');
+        console.log(`(Optional) A Twitch OAuth Token is needed for the Twitch commands to work. You can generate one here: ${chalk.blueBright('https://twitchtokengenerator.com/')}.`);
+        let token = readline.question(`Twitch OAuth Token [${chalk.green(config.credentials.twitch_token || 'none')}]: `);
 
-            if(valid_key)
-                console.log(chalk.greenBright("Valid Twitch Client ID!"));
-            else
-                console.log(chalk.redBright("Invalid Twitch Client ID!"));
+        if (!token) token = config.credentials.twitch_token || 'none';
+
+        config.credentials.twitch_token = token === 'none' ? '' : token;
+
+        try {
+            await axios.get('https://api.twitch.tv/helix/streams', {
+                headers: {
+                    'Client-ID': config.credentials.twitch_client_id,
+                    'Authorization': `Bearer ${config.credentials.twitch_token}`,
+                },
+            });
+            valid_client_id = true;
+            valid_token = true;
+            console.log(chalk.greenBright('Valid Twitch Client ID and OAuth Token!'));
+        } catch (e) {
+            valid_client_id = false;
+            valid_token = false;
+            console.log(chalk.redBright('Invalid Twitch Client ID or OAuth Token!'));
         }
-    }while(!valid_key && value != 'none');
-
-    config.credentials.twitch_client_id = value == 'none' ? "" : value;
-
+    } while (!valid_client_id || !valid_token);
 
     default_value = 'none';
 
