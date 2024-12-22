@@ -11,10 +11,10 @@
         "config": "node generate-config",
         "emojis": "node upload-emojis"
     },
-    "author": "LeaPhant",
+    "author": "Paraliyzed_evo",
     "repository": {
         "type": "git",
-        "url": "https://github.com/LeaPhant/flowabot.git"
+        "url": "https://github.com/paraliyzedevo/flowabot.git"
     },
     "license": "MIT",
     "dependencies": {

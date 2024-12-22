@@ -1,20 +1,19 @@
 const axios = require('axios');
 const { DateTime, Duration } = require('luxon');
 
-const helper = require('../helper.js');
 const config = require('../config.json');
 
-const twitchKraken = axios.create({
-    baseURL: 'https://api.twitch.tv/kraken',
+const twitchHelix = axios.create({
+    baseURL: 'https://api.twitch.tv/helix',
     headers: {
-        'Accept': 'application/vnd.twitchtv.v5+json',
+        'Authorization': `Bearer ${config.credentials.twitch_token}`,
         'Client-ID': config.credentials.twitch_client_id
     }
 });
 
 module.exports = {
     command: ['uptime', 'downtime'],
-    description: "See how for long a Twitch channel has been live or for how long it hasn't been streaming.",
+    description: "Check how long a Twitch channel has been live or how long it's been offline.",
     argsRequired: 1,
     usage: '<twitch username>',
     example: [
@@ -27,79 +26,78 @@ module.exports = {
             result: "Returns ninja's uptime or downtime."
         }
     ],
-    configRequired: ['credentials.twitch_client_id'],
+    configRequired: ['credentials.twitch_client_id', 'credentials.twitch_token'],
     call: obj => {
         return new Promise((resolve, reject) => {
-            let { argv } = obj;
+            const { argv } = obj;
+            const channel_name = argv[1];
 
-            let channel_name = argv[1];
+            // Fetch user information
+            twitchHelix.get(`/users`, {
+                params: { login: channel_name }
+            }).then(userResponse => {
+                const users = userResponse.data.data;
 
-            twitchKraken.get(`/users`, {
-                params: {
-                    'login': channel_name,
-                },
-            }).then(response => {
-                let users = response.data.users;
-
-                if(users.length == 0){
+                if (users.length === 0) {
                     reject('User not found');
                     return;
                 }
 
-                let user_id = users[0]._id;
+                const user_id = users[0].id;
 
-                twitchKraken.get(`/channels/${user_id}/videos`, {
-                    params: {
-                        broadcast_type: 'archive',
-                        limit: 1
-                    }
-                }).then(response => {
-                    let videos = response.data.videos;
+                // Check if the channel is live
+                twitchHelix.get(`/streams`, {
+                    params: { user_id }
+                }).then(streamResponse => {
+                    const streams = streamResponse.data.data;
 
-                    if(videos.length >= 1){
-                        var vod = videos[0];
-                        var name = vod.channel.display_name;
+                    if (streams.length > 0) {
+                        // Channel is live
+                        const stream = streams[0];
+                        const uptimeMs = Date.now() - new Date(stream.started_at).getTime();
+                        const duration = Duration.fromMillis(uptimeMs);
 
-                        if(vod.status == 'recording'){
-                            const uptimeMs = DateTime.now().toMillis() - DateTime.fromISO(vod.created_at).toMillis();
-                            const duration = Duration.fromMillis(uptimeMs);
+                        const uptime = uptimeMs > 60 * 60 * 1000
+                            ? duration.toFormat("h'h 'm'm'")
+                            : duration.toFormat("m'm'");
 
-                            if(uptimeMs > 60 * 60 * 1000)
-                            resolve(`${name} has been live for ${duration.toFormat("h'h 'm'm'")}`);
-                            else
-                                resolve(`${name} has been live for ${duration.toFormat("m'm'")}`);
-                        }else{
-                            const downtimeMs = DateTime.now().toMillis() - DateTime.fromISO(vod.created_at).toMillis() - vod.length * 1000;
-                            const duration = Duration.fromMillis(downtimeMs);
+                        resolve(`${channel_name} has been live for ${uptime}`);
+                    } else {
+                        // Channel is offline, fetch the latest VOD
+                        twitchHelix.get(`/videos`, {
+                            params: { user_id, type: 'archive', first: 1 }
+                        }).then(videoResponse => {
+                            const videos = videoResponse.data.data;
 
-                            if(downtimeMs < 60 * 1000){
-                                resolve(
-                                    `${name} hasn't streamed in ${duration.toFormat("s's'")}
-                                `);
-                            }else if(downtimeMs < 60 * 60 * 1000){
-                                resolve(
-                                    `${name} hasn't streamed in ${duration.toFormat("m'm'")}
-                                `);
-                            }else if(downtimeMs < 24 * 60 * 60 * 1000){
-                                resolve(
-                                    `${name} hasn't streamed in ${duration.toFormat("h'h'")}
-                                `);
-                            }else{
-                                resolve(
-                                    `${name} hasn't streamed in ${duration.toFormat("d'd' h'h'")}
-                                `);
+                            if (videos.length > 0) {
+                                const vod = videos[0];
+                                const downtimeMs = Date.now() - new Date(vod.created_at).getTime();
+                                const duration = Duration.fromMillis(downtimeMs);
+
+                                const downtime = downtimeMs < 60 * 1000
+                                    ? duration.toFormat("s's'")
+                                    : downtimeMs < 60 * 60 * 1000
+                                        ? duration.toFormat("m'm'")
+                                        : downtimeMs < 24 * 60 * 60 * 1000
+                                            ? duration.toFormat("h'h'")
+                                            : duration.toFormat("d'd' h'h'");
+
+                                resolve(`${channel_name} hasn't streamed in ${downtime}`);
+                            } else {
+                                reject(`${channel_name} hasn't streamed recently or has VODs disabled.`);
                             }
-                        }
-                    }else{
-                        reject(`User either has VODs disabled or hasn't streamed in a while`);
+                        }).catch(err => {
+                            console.error(err);
+                            reject('Error fetching VOD information.');
+                        });
                     }
                 }).catch(err => {
-                    reject('User not found');
-                    helper.error(err);
+                    console.error(err);
+                    reject('Error fetching stream information.');
                 });
             }).catch(err => {
-                reject('User not found');
-                helper.error(err);
+                console.error(err);
+                reject('Error fetching user information.');
             });
         });
     }
