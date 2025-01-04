@@ -5,8 +5,8 @@
     const path = require('path');
 	    const util = require('util');
     const chalk = require('chalk');
-	    const { exec } = require('child_process');
-	    const execPromise = util.promisify(exec);
+	    const { execFile } = require('child_process');
+	    const execPromiseFile = util.promisify(execFile);
 
     const Discord = require('discord.js');
     const axios = require('axios');
@@ -294,7 +294,10 @@ do {
 
     if (value !== 'none') {
         try {
-            response = await execPromise(value.replace('{path}', path.resolve(__dirname, 'README.md')));
+            const [cmd, ...args] = value.split(' ');
+            const resolvedPath = path.resolve(__dirname, 'README.md');
+            const finalArgs = args.map(arg => arg.replace('{path}', resolvedPath));
+            response = await execPromiseFile(cmd, finalArgs);
             if (response?.stderr) {
                 throw new Error(response.stderr);
             }
