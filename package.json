@@ -9,16 +9,18 @@
         "webui": "node renderer/webui.js",
         "commands": "node generate-commands-md",
         "config": "node generate-config",
-        "emojis": "node upload-emojis"
+        "emojis": "node upload-emojis",
     },
-    "author": "Paraliyzed_evo",
+    "author": "LeaPhant",
     "repository": {
         "type": "git",
-        "url": "https://github.com/paraliyzedevo/flowabot.git"
+        "url": "https://github.com/LeaPhant/flowabot.git"
     },
     "license": "MIT",
     "dependencies": {
         "@dmzoneill/urban-dictionary": "^3.0.3",
+        "@twurple/api": "^7.2.1",
+        "@twurple/auth": "^7.2.1",
         "axios": "^1.7.9",
         "booba": "^0.0.16",
         "bparser-js": "^1.0.2",

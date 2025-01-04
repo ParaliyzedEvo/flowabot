@@ -719,6 +719,8 @@ async function getScore(recent_raw, cb){
     let best_score;
 
     recent = Object.assign({
+		score_id: recent_raw.id,
+        replay: recent_raw.has_replay,
         user_id: recent_raw.user_id,
         beatmap_id: recent_raw.beatmap.id,
         rank: recent_raw.passed ? recent_raw.rank: "F",
@@ -797,14 +799,14 @@ async function getScore(recent_raw, cb){
             user_pp: Number(user.statistics.pp)
         }, recent);
 
-        if(best_score){
-            if(compareScores(best_score, recent_raw)){
-                replay = Number(best_score.replay ? 1 : 0);
-				recent.score_id = best_score.id;
-            }else{
-                recent.unsubmitted = true;
-			}
-        }
+        //if(best_score){
+        //    if(compareScores(best_score, recent_raw)){
+        //        replay = Number(best_score.replay ? 1 : 0);
+		//		recent.score_id = best_score.id;
+        //    }else{
+        //        recent.unsubmitted = true;
+		//	}
+        //}
 
         let beatmap = recent_raw.beatmap;
         //let beatmapset = recent_raw.beatmapset;
@@ -918,7 +920,7 @@ async function getScore(recent_raw, cb){
                     recent.strains_bar = true;
             }
 
-            if(replay && await helper.fileExists(beatmap_path)){
+            if(recent.replay && await helper.fileExists(beatmap_path)){
                 let ur_promise = new Promise((resolve, reject) => {
                     if(config.debug)
                         helper.log('getting ur');
@@ -2284,7 +2286,7 @@ module.exports = {
 	            beatmap_id = parseInt(beatmap_url.split("/beatmaps/").pop());
 			else if(beatmap_url.includes("/discussion/"))
 				beatmap_id = parseInt(beatmap_url.split("/discussion/").pop().split("/")[0]);
-	        else if(parseInt(beatmap_url) == beatmap_url && _id_only)
+	        else if(parseInt(beatmap_url) == beatmap_url && id_only)
 	            beatmap_id = parseInt(beatmap_url);
 
 			helper.downloadBeatmap(beatmap_id).finally(() => {
@@ -2708,8 +2710,9 @@ module.exports = {
 
         //let _strain_step = STRAIN_STEP * speed_multiplier;
 
-        //let strain_offset = Math.floor(map.objects[0].time / _strain_step) * _strain_step - _strain_step
-        let strain_offset = rosu_strains.sectionLength
+        		let _strain_step = rosu_strains.sectionLength;
+        let strain_offset = Math.floor(map.objects[0].time / _strain_step) * _strain_step - _strain_step
+        //let strain_offset = rosu_strains.sectionLength;
         //console.log(strain_offset)
 
         let max_strain_time = strain_offset;
@@ -2893,7 +2896,7 @@ module.exports = {
 
             const outputChart = await graphCanvas.renderToBuffer(configuration);
 
-            const output_frame = await getFrame(osu_file_path, max_strain_time_real - map.objects[0].time % 400, mods_array, [427, 320], {ar: ar, cs: cs})
+            const output_frame = await getFrame(osu_file_path, max_strain_time_real - map.objects[0].time % 400, mods_array, [427, 320], {ar: ar, cs: cs, noreplay: true})
             
             const graphImage = new Jimp(600, 400, '#263238E6');
             

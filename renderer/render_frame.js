@@ -10,8 +10,9 @@ const crypto = require('crypto');
 const unzip = require('unzipper');
 const disk = require('diskusage');
 
-const { execFile, fork, spawn } = require('child_process');
+const { exec, execFile, fork, spawn } = require('child_process');
 
+const execPromise = util.promisify(exec);
 const execFilePromise = util.promisify(execFile);
 const diskCheck = util.promisify(disk.check);
 
@@ -28,7 +29,6 @@ const MAX_SIZE_DM = 8 * 1024 * 1024;
 let enabled_mods = [""];
 
 const resources = path.resolve(__dirname, "res");
-
 
 async function copyDir(src,dest) {
     const entries = await fs.promises.readdir(src, {withFileTypes: true});
@@ -136,8 +136,8 @@ async function renderHitsounds(mediaPromise, beatmap, start_time, actual_length,
 
 	try{
 		await execFilePromise(ffmpeg, [
-			'-ss', start_time / 1000, '-i', `"${media.audio_path}"`, '-t', actual_length * Math.max(1, time_scale) / 1000,
-			'-filter:a', `"afade=t=out:st=${Math.max(0, actual_length * time_scale / 1000 - 0.5 / time_scale)}:d=0.5,atempo=${time_scale},volume=0.7"`,
+			'-ss', start_time / 1000, '-i', `"${media.audio_path}"`, '-to', start_time / 1000 + actual_length / 1000,
+			'-filter:a', `"afade=t=out:st=${Math.max(0, actual_length / 1000 - 0.5 / time_scale)}:d=0.5,atempo=${time_scale},volume=0.7"`,
 			path.resolve(file_path, 'audio.wav')
 		], { shell: true });
 
@@ -149,7 +149,7 @@ async function renderHitsounds(mediaPromise, beatmap, start_time, actual_length,
 
 	let hitSoundPaths = await processHitsounds(media.beatmap_path, argon);
 
-	let hitObjects = beatmap.hitObjects.filter(a => a.startTime >= start_time && a.startTime < start_time + actual_length * time_scale);
+	let hitObjects = beatmap.hitObjects.filter(a => a.startTime >= start_time && a.startTime < start_time + actual_length);
 	let hitSounds = [];
 
 	const scoringFrames = beatmap.ScoringFrames.filter(a => a.offset >= start_time && a.offset < start_time + actual_length);
@@ -261,8 +261,9 @@ async function renderHitsounds(mediaPromise, beatmap, start_time, actual_length,
 		}
 	});
 	// process in chunks
-	let chunkLength = 2500;
-	let chunkCount = Math.ceil(modded_length / chunkLength);
+	const chunkCount = require('os').cpus().length;
+	const chunkLength = Math.floor(modded_length / chunkCount);
+
 	let hitSoundPromises = [];
 
 	let mergeHitSoundArgs = [];
@@ -284,17 +285,14 @@ async function renderHitsounds(mediaPromise, beatmap, start_time, actual_length,
 		let indexStart = Object.keys(hitSoundIndexes).length;
 
 		hitSoundsChunk.forEach((hitSound, i) => {
-			let fadeOutStart = actual_length - 500;
-			let fadeOut = hitSound.offset >= fadeOutStart ? (1 - (hitSound.offset - (actual_length - 500)) / 500) : 1;
-
-			filterComplex += `[${hitSoundIndexes[hitSound.sound]}]adelay=${hitSound.offset}|${hitSound.offset},volume=${hitSound.volume * 0.7 * fadeOut}[${i + indexStart}];`
+			filterComplex += `[${hitSoundIndexes[hitSound.sound]}]adelay=${hitSound.offset}|${hitSound.offset},volume=${(hitSound.volume * 0.7).toFixed(1)}[${i + indexStart}];`
 		});
 
 		hitSoundsChunk.forEach((hitSound, i) => {
 			filterComplex += `[${i + indexStart}]`;
 		});
 
-		filterComplex += `amix=inputs=${hitSoundsChunk.length}:dropout_transition=${actual_length},volume=${hitSoundsChunk.length},dynaudnorm`;
+		filterComplex += `amix=inputs=${hitSoundsChunk.length}:normalize=0`;
 
 		ffmpegArgsChunk.push(`"${filterComplex}"`, '-ac', '2', path.resolve(file_path, `hitsounds${i}.wav`));
 		mergeHitSoundArgs.push('-guess_layout_max', '0', '-i', path.resolve(file_path, `hitsounds${i}.wav`));
@@ -309,7 +307,7 @@ async function renderHitsounds(mediaPromise, beatmap, start_time, actual_length,
 		}
 
 		Promise.all(hitSoundPromises).then(async () => {
-			mergeHitSoundArgs.push('-filter_complex', `amix=inputs=${chunksToMerge}:dropout_transition=${actual_length},volume=${chunksToMerge},dynaudnorm`, path.resolve(file_path, `hitsounds.wav`));
+			mergeHitSoundArgs.push('-filter_complex', `amix=inputs=${chunksToMerge}:normalize=0`, path.resolve(file_path, `hitsounds.wav`));
 
 			await execFilePromise(ffmpeg, mergeHitSoundArgs, { shell: true });
 
@@ -321,7 +319,7 @@ async function renderHitsounds(mediaPromise, beatmap, start_time, actual_length,
 
 			mergeArgs.push(
 				'-guess_layout_max', '0', '-i', path.resolve(file_path, `hitsounds.wav`),
-				'-filter_complex', `amix=inputs=${mixInputs}:duration=first:dropout_transition=${actual_length},volume=2,dynaudnorm`, path.resolve(file_path, 'merged.wav')
+				'-filter_complex', `amix=inputs=${mixInputs}:duration=first:dropout_transition=${modded_length}:normalize=0`, path.resolve(file_path, 'merged.wav')
 			);
 
 			await execFilePromise(ffmpeg, mergeArgs, { shell: true });
@@ -534,7 +532,7 @@ module.exports = {
 
 			worker.on('close', code => {
 				if(code > 0){
-					resolveRender("Error processing beatmap").catch(console.error);
+					resolveRender("Error processing beatmap or replay").catch(console.error);
 
 					return false;
 				}
@@ -552,7 +550,8 @@ module.exports = {
 				beatmap = await processBeatmap(beatmap_path, options, mods_raw, time, length);
 				renderStatus[0] = `✓ processing beatmap (${((Date.now() - beatmapProcessStart) / 1000).toFixed(3)}s)`;
 			} catch(e) {
-				resolveRender("Error processing beatmap").catch(console.error);
+				console.error(e);
+				resolveRender("Error processing beatmap or replay").catch(console.error);
 				return false;
 			}
 			
@@ -586,13 +585,7 @@ module.exports = {
 
 		let i = 0;
 
-		let time_scale = 1;
-
-		if(enabled_mods.includes('DT') || enabled_mods.includes('NC'))
-			time_scale *= mods_raw.filter(mod => mod.acronym == "DT" || mod.acronym == "NC")[0].settings?.speed_change ?? 1.5;
-
-		if(enabled_mods.includes('HT') || enabled_mods.includes('DC'))
-			time_scale *= mods_raw.filter(mod => mod.acronym == "HT" || mod.acronym == "DC")[0].settings?.speed_change ?? 0.75;
+		let time_scale = beatmap.SpeedMultiplier;
 
 		if(options.speed != 1)
 			time_scale = options.speed;
@@ -613,9 +606,8 @@ module.exports = {
 
 		let threads = require('os').cpus().length;
 
-		let modded_length = time_scale > 0 ? Math.min(actual_length * time_scale, lastObjectTime) : actual_length;
-
-		let amount_frames = Math.floor(modded_length / time_frame);
+		let modded_length = Math.min(actual_length / time_scale, lastObjectTime / time_scale);
+		let amount_frames = Math.floor(actual_length / time_frame);
 
 		let frames_size = amount_frames * size[0] * size[1] * 4;
 
@@ -760,7 +752,7 @@ module.exports = {
 				ffmpeg_args.push(
 					'-filter_complex', `"overlay=(W-w)/2:shortest=1"`,
 					'-pix_fmt', 'yuv420p', '-r', fps, '-c:v', 'libx264', /*'-b:v', `${bitrate}k`*/ '-crf', 18,
-					'-c:a', 'aac', '-b:a', '164k', '-t', actual_length / 1000, '-preset', 'veryfast',
+					'-c:a', 'aac', '-b:a', '164k', '-t', modded_length / 1000, '-preset', 'veryfast',
 					'-movflags', 'faststart', '-g', fps, '-force_key_frames', '00:00:00.000', `${file_path}/video.mp4`
 				);
 
@@ -799,7 +791,7 @@ module.exports = {
 						.finally(() => {
 							fs.promises.rm(file_path, { recursive: true }).catch(helper.error);
 						});
-					}else if(stat.size < MAX_SIZE_DM ){
+					}else if(stat.size < MAX_SIZE_DM){
 						resolveRender({files: [{
 							attachment: `${file_path}/video.${options.type}`,
 							name: `video.${options.type}`
@@ -811,28 +803,27 @@ module.exports = {
 							fs.promises.rm(file_path, { recursive: true }).catch(helper.error);
 						});
 					}else{
-						try{
-							console.log('uploading to pek.li:', config.pekli_host + '/api/upload');
-
-							const response = await execFilePromise('curl',
-								[
-									'-s', '-X', 'POST', config.pekli_host + '/api/upload',
-									'-H',`"Content-Type: multipart/form-data"`,
-									'-H', `"authorization: ${config.credentials.pekli_token}"`,
-									'-H', `"Override-Domain: pek.li"`,
-									'-F', `"file=@${file_path}/video.${options.type};type=video/mp4"`
-								], {shell: true});
-
-							const json = JSON.parse(response.stdout);
-
-							resolveRender(json.files[0]).then(() => {
-								fs.promises.rm(file_path, { recursive: true }).catch(helper.error);
-							}).catch(console.error)
-							.finally(() => {
+						if (!config.upload_command) {
+							resolveRender("File too large and no upload command specified.").finally(() => {
 								fs.promises.rm(file_path, { recursive: true }).catch(helper.error);
 							});
+							return;
+						}
+
+						try{
+							const upload_command = config.upload_command.replace('{path}', `${file_path}/video.${options.type}`);
+
+							if (config.debug)
+								console.log('running upload command: ', config.upload_command);
+
+							const response = await execPromise(upload_command);
+							const url = new URL(response.stdout);
+
+							await resolveRender(url.href);
 						}catch(err){
+							await resolveRender("File too large and failed to upload to specified upload command.")
 							console.error(err);
+						}finally{
 							fs.promises.rm(file_path, { recursive: true }).catch(helper.error);
 						}
 					}
@@ -868,7 +859,7 @@ module.exports = {
 			worker.send({
 				beatmap,
 				start_time: time + index * time_frame,
-				end_time: time + index * time_frame + modded_length,
+				end_time: time + index * time_frame + actual_length,
 				time_frame: time_frame * threads,
 				file_path,
 				options,

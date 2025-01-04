@@ -12,11 +12,11 @@ const { parseReplay, applyReplay } = require('./replay');
 const applySliders = require('./slider');
 const applyHitsounds = require('./hitsounds');
 const applyStacking = require('./stacking');
-const applyMods = require('./mods/mods');
+const { applyMods, ApplicableMods } = require('./mods/mods');
 const applyCounter = require('./pp');
 const applyFollowpoints = require('./followpoints');
 
-const exists = path => fs.access(path).then(() => true, () => false);
+const exists = async path => fs.access(path).then(() => true, () => false);
 
 const OBJECT_RADIUS = 64;
 const ROUNDING_ALLOWANCE = float(1.00041);
@@ -55,7 +55,7 @@ class BeatmapProcessor {
 		if (this.options.score_id) {
 			const replay_path = path.resolve(config.replay_path, `${this.options.score_id}.osr`);
 
-			if (exists(replay_path)) {
+			if (await exists(replay_path)) {
 				Replay = await parseReplay(await fs.readFile(replay_path));
 			}
 		}
@@ -140,7 +140,7 @@ class BeatmapProcessor {
 			Beatmap.CircleSize = options.cs;
 	
 		if (!isNaN(options.ar))
-			Beatmap.ApproachRateRealtime = options.ar;
+			Beatmap.ApproachRate = options.ar;
 	
 		if (!isNaN(options.od))
 			Beatmap.OverallDifficulty = options.od;
@@ -197,8 +197,8 @@ class BeatmapProcessor {
 		}
 	}
 
-	async applyMods () {
-		applyMods(this.Beatmap);
+	async applyMods (EnabledMods) {
+		applyMods(this.Beatmap, EnabledMods);
 	}
 
 	async applyComboColors () {
@@ -322,6 +322,11 @@ class BeatmapProcessor {
 					break;
 			}
 		}
+
+		if (options.choke) {
+			const firstMiss = Beatmap.ScoringFrames.find(s => s.result == 'miss' || s.result == 'sliderbreak');
+			time = (firstMiss?.offset ?? 3500) - 3500; 
+		}
 	
 		let firstHitobjectIndex = Beatmap.hitObjects.findIndex(x => x.endTime > time - 1000) ?? 0;
 		let lastHitobjectIndex = Beatmap.hitObjects.findIndex(x => x.startTime > (time + (length + 1000) * Beatmap.SpeedMultiplier)) - 1;
@@ -334,6 +339,14 @@ class BeatmapProcessor {
 				firstHitobjectIndex--;
 			else
 				lastHitobjectIndex++;
+		}
+
+		if (options.full) {
+			firstHitobjectIndex = 0;
+			lastHitobjectIndex = Beatmap.hitObjects.length - 1;
+
+			time = Beatmap.hitObjects[firstHitobjectIndex].startTime;
+			length = Beatmap.hitObjects[lastHitobjectIndex].endTime - time
 		}
 
 		Beatmap.firstHitobjectIndex = firstHitobjectIndex;
@@ -363,8 +376,9 @@ class BeatmapProcessor {
 
 		await this.applySettings();
 		await this.applyComboColors();
+		await this.applyMods(ApplicableMods.ReflectionMod);
 		await this.applySliders();
-		await this.applyMods();
+		await this.applyMods(ApplicableMods.RandomMod);
 		await this.applyStacking();
 		await this.applyHitsounds();
 		await this.applyReplay();

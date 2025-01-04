@@ -3,7 +3,10 @@
     const fs = require('fs');
     const os = require('os');
     const path = require('path');
+	    const util = require('util');
     const chalk = require('chalk');
+	    const { exec } = require('child_process');
+	    const execPromise = util.promisify(exec);
 
     const Discord = require('discord.js');
     const axios = require('axios');
@@ -221,32 +224,96 @@
     config.credentials.osu_api_key = value == 'none' ? "" : value;
 
     default_value = 'none';
+default_value2 = 'none';
 
-    if(config.credentials.client_id)
-        default_value = config.credentials.client_id;
+if (config.credentials.client_id)
+    default_value = config.credentials.client_id;
 
+if (config.credentials.client_secret)
+    default_value2 = config.credentials.client_secret;
+
+do {
     console.log('');
     console.log(`(Optional) An osu! client id is needed for the osu! commands to work. You can get one here: ${chalk.blueBright('https://osu.ppy.sh/home/account/edit#oauth')}, at the bottom of the page`);
     value = readline.question(`oauth2 client id [${chalk.green(default_value)}]: `);
 
-    if(!value)
+    if (!value)
         value = default_value;
-
-    config.credentials.client_id = value == 'none' ? "" : value;
-
-    default_value = 'none';
-
-        if(config.credentials.client_secret)
-        default_value = config.credentials.client_secret;
 
     console.log('');
     console.log(`(Optional) An osu! client secret is needed for the osu! commands to work. You can get one here: ${chalk.blueBright('https://osu.ppy.sh/home/account/edit#oauth')}, at the bottom of the page`);
-    value = readline.question(`oauth2 client secret [${chalk.green(default_value)}]: `);
+    value2 = readline.question(`oauth2 client secret [${chalk.green(default_value2)}]: `);
 
-    if(!value)
+    if (!value2)
+        value2 = default_value2;
+
+    valid_key = true;
+
+    if (value !== 'none' && value2 !== 'none') {
+        try {
+            const response = await axios.post('https://osu.ppy.sh/oauth/token', {
+                client_id: value,
+                client_secret: value2,
+                grant_type: 'client_credentials',
+                scope: 'public',
+            }, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            });
+
+            if (response.data && response.data.access_token) {
+                console.log(chalk.greenBright("Valid osu! OAuth2 client id/secret!"));
+            } else {
+                valid_key = false;
+                console.log(chalk.redBright("Invalid osu! OAuth2 client id/secret! No access token received."));
+            }
+        } catch (e) {
+            valid_key = false;
+            console.log(chalk.redBright("Invalid osu! OAuth2 client id/secret! Error occurred."));
+        }
+    }
+} while (!valid_key && value !== 'none' && value2 !== 'none');
+
+config.credentials.client_id = value === 'none' ? "" : value;
+config.credentials.client_secret = value2 === 'none' ? "" : value2;
+	
+default_value = 'none';
+
+do {
+    let response;
+    let valid_key = true;
+
+    console.log('');
+    console.log(`(Optional) An upload command for renders exceeding Discord's size limit, substitute {path} for the file path to upload, e.g. curl -X POST -F "file=@{path}" https://example.com/upload. The output of the command will get posted as the command response.`);
+    value = readline.question(`Command: [${chalk.green(default_value)}]: `);
+
+    if (!value) {
         value = default_value;
+    }
 
-    config.credentials.client_secret = value == 'none' ? "" : value;
+    if (value !== 'none') {
+        try {
+            response = await execPromise(value.replace('{path}', path.resolve(__dirname, 'README.md')));
+            if (response?.stderr) {
+                throw new Error(response.stderr);
+            }
+        } catch (e) {
+            valid_key = false; // Mark as invalid if an error occurs
+            console.log(chalk.redBright("Upload command failed!"));
+            console.error(`Error: ${e.message || e}`);
+        }
+
+        if (valid_key) {
+            console.log(chalk.greenBright("Upload command success!"));
+            console.log(`Output: ${response.stdout}`);
+        }
+    } else {
+        break;
+    }
+} while (!valid_key);
+
+config.upload_command = value === 'none' ? "" : value;
 
     default_value = 'none';
 
