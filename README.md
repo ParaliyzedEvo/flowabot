@@ -36,7 +36,8 @@
 
 ### Prerequisites
 
-- **Using Linux or macOS is recommended** (No support for Windows, here's two unofficial guides to run it on Windows if you wanna try anyway: https://github.com/LeaPhant/flowabot/issues/9, https://pastebin.com/g6yuxCCf)
+- **Using Linux or macOS is recommended**
+    - To run on windows, check the [wiki](https://github.com/ParaliyzedEvo/flowabot/wiki) on how to run on windows
 - Git (https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
 - Node.js 14 or higher (https://nodejs.org/)
 - node-gyp (https://github.com/nodejs/node-gyp#installation)
