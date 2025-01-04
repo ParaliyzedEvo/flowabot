@@ -38,9 +38,7 @@ module.exports = {
             axios.post("https://cooltext.com/PostChange", formData, {
                 headers: formData.getHeaders()
               }).then(response => {
-                const agent = new https.Agent({  
-                    rejectUnauthorized: false
-                  });
+                const agent = new https.Agent();
 
                 axios.get(response.data.renderLocation, {httpsAgent: agent, method: "GET", responseType: "stream"}).then(response => {
                     let attachment = [{
