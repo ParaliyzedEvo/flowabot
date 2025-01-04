@@ -356,6 +356,20 @@ config.upload_command = value === 'none' ? "" : value;
             console.log(chalk.redBright('Invalid Twitch Client ID or OAuth Token!'));
         }
     } while (!valid_client_id || !valid_token);
+	
+	default_value = 'none';
+
+    if(config.credentials.twitch_refresh_token)
+        default_value = config.credentials.twitch_refresh_token;
+
+    console.log('');
+    console.log(`(Optional) Providing a Twitch refresh token will allow the bot to automatically refresh your twitch token for you. It's not needed if you want to do it manually.`);
+    value = readline.question(`Twitch refresh token [${chalk.green(default_value)}]: `);
+
+    if(!value)
+        value = default_value;
+
+    config.credentials.twitch_refresh_token = value == 'none' ? "" : value;
 
     default_value = 'none';
 
