@@ -51,6 +51,7 @@ async function validateToken(token) {
 
 // Refresh the Twitch token
 async function refreshToken() {
+  console.log(`You can get your client secret from one of your exsiting apps here: ${chalk.blueBright('https://dev.twitch.tv/console/apps')}`);
   const clientSecret = await promptUserInput("Enter your Twitch Client Secret: ");
   try {
     const response = await axios.post(TOKEN_REFRESH_URL, null, {
