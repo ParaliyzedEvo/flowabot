@@ -315,7 +315,7 @@ do {
                 throw new Error(response.stderr);
             }
         } catch (e) {
-            valid_key = false; // Mark as invalid if an error occurs
+            valid_key = false;
             console.log(chalk.redBright("Upload command failed!"));
             console.error(`Error: ${e.message || e}`);
         }
@@ -330,6 +330,10 @@ do {
 } while (!valid_key);
 
 config.upload_command = value === 'none' ? "" : value;
+
+let valid_client_id = false;
+let valid_token = false;
+let valid_client_secret = false;
 
 default_value = 'none';
 
@@ -353,9 +357,18 @@ do {
     if (!token) token = config.credentials.twitch_token || 'none';
 
     config.credentials.twitch_token = token === 'none' ? '' : token;
+    
+    console.log('');
+    console.log(`(Optional) A Twitch Client Secret is needed to refresh your token. You can generate one here: ${chalk.blueBright('https://dev.twitch.tv/console/apps')}.`);
+    let client_secret = readline.question(`Twitch Client Secret [${chalk.green(config.credentials.twitch_client_secret || 'none')}]: `);
 
-    // If both client_id and token are provided, validate them
-    if (config.credentials.twitch_client_id && config.credentials.twitch_token) {
+    if (!client_secret) client_secret = config.credentials.twitch_client_secret || 'none';
+
+    config.credentials.twitch_client_secret = client_secret === 'none' ? '' : client_secret;
+
+    if (!config.credentials.twitch_client_id) {
+        valid_client_id = true;
+    } else {
         try {
             await axios.get('https://api.twitch.tv/helix/streams', {
                 headers: {
@@ -364,19 +377,55 @@ do {
                 },
             });
             valid_client_id = true;
-            valid_token = true;
-            console.log(chalk.greenBright('Valid Twitch Client ID and OAuth Token!'));
+            console.log(chalk.greenBright('Valid Twitch Client ID!'));
         } catch (e) {
             valid_client_id = false;
-            valid_token = false;
-            console.log(chalk.redBright('Invalid Twitch Client ID or OAuth Token!'));
+            console.log(chalk.redBright('Invalid Twitch Client ID!'));
         }
-    } else {
-        // Skip validation if either client_id or token is not provided
-        valid_client_id = true;
-        valid_token = true;
     }
-} while (!valid_client_id || !valid_token);
+
+    if (!config.credentials.twitch_token || !config.credentials.twitch_client_id) {
+        valid_token = true;
+    } else {
+        try {
+            const response = await axios.get('https://api.twitch.tv/helix/streams', {
+                headers: {
+                    'Client-ID': config.credentials.twitch_client_id,
+                    'Authorization': `Bearer ${config.credentials.twitch_token}`,
+                },
+            });
+
+            if (response.data && response.data.data.length > 0) {
+                valid_token = true;
+                console.log(chalk.greenBright('Valid Twitch OAuth Token!'));
+            }
+        } catch (e) {
+            valid_token = false;
+            console.log(chalk.redBright('Invalid Twitch OAuth Token!'));
+        }
+    }
+
+    if (!config.credentials.twitch_client_id || !config.credentials.twitch_client_secret) {
+        valid_client_secret = true;
+    } else {
+        try {
+            const response = await axios.post('https://id.twitch.tv/oauth2/token', null, {
+                params: {
+                    client_id: config.credentials.twitch_client_id,
+                    client_secret: config.credentials.twitch_client_secret,
+                    grant_type: 'client_credentials',
+                },
+            });
+            valid_client_secret = true;
+            console.log(chalk.greenBright('Valid Twitch Client Secret!'));
+        } catch (e) {
+            valid_client_secret = false;
+            console.log(chalk.redBright('Invalid Twitch Client Secret!'));
+        }
+    }
+
+} while (!valid_client_id || !valid_token || !valid_client_secret);
+
 	
 	default_value = 'none';
 
