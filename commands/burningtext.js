@@ -3,7 +3,6 @@ const https = require('https');
 const helper = require('../helper.js');
 const FormData = require('form-data')
 
-
 module.exports = {
     command: ['burningtext', 'flametext', 'cooltext'],
     description: "Generate a burning text gif.",
@@ -17,43 +16,51 @@ module.exports = {
         return new Promise((resolve, reject) => {
             let { argv } = obj;
 
-            let args = argv
-            args.shift()
+            let args = argv;
+            args.shift();
 
-            const text = args.join(" ")
+            const text = args.join(" ");
 
-            const formData = new FormData()
+            const formData = new FormData();
 
-            formData.append("LogoID", 4)
-            formData.append("Text", text)
-            formData.append("FontSize", 70)
-            formData.append("Color1_color", "#FF0000")
-            formData.append("Integer1", 15)
-            formData.append("Boolean1", "on")
-            formData.append("Integer9", 0)
-            formData.append("Integer13", "on")
-            formData.append("Integer12", "on")
-            formData.append("BackgroundColor_color", "#FFFFFF")
+            formData.append("LogoID", 4);
+            formData.append("Text", text);
+            formData.append("FontSize", 70);
+            formData.append("Color1_color", "#FF0000");
+            formData.append("Integer1", 15);
+            formData.append("Boolean1", "on");
+            formData.append("Integer9", 0);
+            formData.append("Integer13", "on");
+            formData.append("Integer12", "on");
+            formData.append("BackgroundColor_color", "#FFFFFF");
+
+            // Create an HTTPS agent that disables SSL verification
+            const agent = new https.Agent({
+                rejectUnauthorized: false, // Disables certificate verification
+            });
 
             axios.post("https://cooltext.com/PostChange", formData, {
-                headers: formData.getHeaders()
-              }).then(response => {
-                const agent = new https.Agent();
-
-                axios.get(response.data.renderLocation, {httpsAgent: agent, method: "GET", responseType: "stream"}).then(response => {
+                headers: formData.getHeaders(),
+                httpsAgent: agent, // Use the custom agent
+            }).then(response => {
+                axios.get(response.data.renderLocation, {
+                    httpsAgent: agent, // Use the custom agent
+                    method: "GET",
+                    responseType: "stream"
+                }).then(response => {
                     let attachment = [{
                         attachment: response.data,
-                        name: text.substring(0,1024).replace(/(\r\n|\n|\r)/g,"") + '.gif'
-                    }]
+                        name: text.substring(0, 1024).replace(/(\r\n|\n|\r)/g, "") + '.gif'
+                    }];
 
-                    resolve({files: attachment});
+                    resolve({ files: attachment });
                 }).catch(err => {
                     helper.error(err);
-                    reject("Couldn't generate gif")
+                    reject("Couldn't generate gif");
                 });
             }).catch(err => {
                 helper.error(err);
-                reject("Couldn't generate gif")
+                reject("Couldn't generate gif");
             });
         });
     }

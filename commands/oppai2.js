@@ -57,10 +57,11 @@ module.exports = {
 
                     let beatmap_path = download_path ? download_path : path.resolve(config.osu_cache_path, `${beatmap_id}.osu`);
 
-                    const oppaiCmd = '/home/osu/oppai2014/oppai-ng/oppai';
+                    // Use process.env.HOME to get the home directory and construct the oppai path
+                    const oppaiPath = path.join(process.env.HOME, 'oppai', 'oppai');
                     const oppaiArgs = [beatmap_path, ...argv.slice(2)];
 
-                    execFile(oppaiCmd, oppaiArgs, (err, stdout, stderr) => {
+                    execFile(oppaiPath, oppaiArgs, (err, stdout, stderr) => {
                         if(err || stderr){
                             if(err){
                                 helper.error(err);
