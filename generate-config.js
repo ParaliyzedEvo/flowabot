@@ -318,31 +318,31 @@ do {
 
 config.upload_command = value === 'none' ? "" : value;
 
-    default_value = 'none';
+default_value = 'none';
 
-    if (config.credentials.twitch_client_id) {
-        default_value = config.credentials.twitch_client_id;
-    }
+if (config.credentials.twitch_client_id) {
+    default_value = config.credentials.twitch_client_id;
+}
 
-    do {
-        console.log('');
-        console.log(`(Optional) A Twitch Client ID is needed for the Twitch commands to work. You can get one here: ${chalk.blueBright('https://dev.twitch.tv/console/apps')}.`);
-        let client_id = readline.question(`Twitch Client ID [${chalk.green(default_value)}]: `);
+do {
+    console.log('');
+    console.log(`(Optional) A Twitch Client ID is needed for the Twitch commands to work. You can get one here: ${chalk.blueBright('https://dev.twitch.tv/console/apps')}.`);
+    let client_id = readline.question(`Twitch Client ID [${chalk.green(default_value)}]: `);
 
-        if (!client_id) client_id = default_value;
+    if (!client_id) client_id = default_value;
 
-        config.credentials.twitch_client_id = client_id === 'none' ? '' : client_id;
+    config.credentials.twitch_client_id = client_id === 'none' ? '' : client_id;
 
-    default_value = 'none';
-	
-        console.log('');
-        console.log(`(Optional) A Twitch OAuth Token is needed for the Twitch commands to work. You can generate one here: ${chalk.blueBright('https://twitchtokengenerator.com/')}.`);
-        let token = readline.question(`Twitch OAuth Token [${chalk.green(config.credentials.twitch_token || 'none')}]: `);
+    console.log('');
+    console.log(`(Optional) A Twitch OAuth Token is needed for the Twitch commands to work. You can generate one here: ${chalk.blueBright('https://twitchtokengenerator.com/')}.`);
+    let token = readline.question(`Twitch OAuth Token [${chalk.green(config.credentials.twitch_token || 'none')}]: `);
 
-        if (!token) token = config.credentials.twitch_token || 'none';
+    if (!token) token = config.credentials.twitch_token || 'none';
 
-        config.credentials.twitch_token = token === 'none' ? '' : token;
+    config.credentials.twitch_token = token === 'none' ? '' : token;
 
+    // If both client_id and token are provided, validate them
+    if (config.credentials.twitch_client_id && config.credentials.twitch_token) {
         try {
             await axios.get('https://api.twitch.tv/helix/streams', {
                 headers: {
@@ -358,7 +358,12 @@ config.upload_command = value === 'none' ? "" : value;
             valid_token = false;
             console.log(chalk.redBright('Invalid Twitch Client ID or OAuth Token!'));
         }
-    } while (!valid_client_id || !valid_token);
+    } else {
+        // Skip validation if either client_id or token is not provided
+        valid_client_id = true;
+        valid_token = true;
+    }
+} while (!valid_client_id || !valid_token);
 	
 	default_value = 'none';
 
