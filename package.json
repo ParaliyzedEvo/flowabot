@@ -4,7 +4,7 @@
     "version": "1.0.0",
     "main": "index.js",
     "scripts": {
-        "start": "git pull; npm i && [ ! -f ./config.json ] && npm run config; node checkAndRefreshToken && node index",
+        "start": "git pull; npm i && [ ! -f ./config.json ] && npm run config; node checkAndRefreshToken",
         "test": "echo \"Error: no test specified\" && exit 1",
         "webui": "node renderer/webui.js",
         "commands": "node generate-commands-md",

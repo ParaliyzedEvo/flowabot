@@ -1,6 +1,8 @@
 const fs = require("fs");
 const axios = require("axios");
 const readline = require("readline");
+const { execSync } = require("child_process");
+const chalk = require("chalk");
 
 // Path to the config file (same directory)
 const CONFIG_FILE = "config.json";
@@ -8,13 +10,14 @@ const CONFIG_FILE = "config.json";
 // Load the configuration
 let config;
 if (fs.existsSync(CONFIG_FILE)) {
-  config = require(`./${CONFIG_FILE}`);
+  config = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
 } else {
   console.error("Config file not found!");
   process.exit(1);
 }
 
-const { twitch_token, twitch_client_id, twitch_refresh_token } = config.credentials;
+// Extract Twitch credentials
+const { twitch_token, twitch_client_id, twitch_refresh_token } = config.credentials || {};
 const TOKEN_VALIDATE_URL = "https://id.twitch.tv/oauth2/validate";
 const TOKEN_REFRESH_URL = "https://id.twitch.tv/oauth2/token";
 
@@ -25,10 +28,12 @@ const promptUserInput = (query) => {
     output: process.stdout,
   });
 
-  return new Promise((resolve) => rl.question(query, (answer) => {
-    rl.close();
-    resolve(answer.trim());
-  }));
+  return new Promise((resolve) =>
+    rl.question(query, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    })
+  );
 };
 
 // Validate the Twitch token
@@ -37,21 +42,25 @@ async function validateToken(token) {
     const response = await axios.get(TOKEN_VALIDATE_URL, {
       headers: { Authorization: `OAuth ${token}` },
     });
-    console.log("Token is valid.");
+    console.log(chalk.green("Token is valid."));
     return true;
   } catch (error) {
     if (error.response && error.response.status === 401) {
-      console.log("Token is invalid or expired.");
+      console.log(chalk.yellow("Token is invalid or expired."));
       return false;
     }
-    console.error("Error validating token:", error.message);
+    console.error(chalk.red("Error validating token:"), error.message);
     process.exit(1);
   }
 }
 
 // Refresh the Twitch token
 async function refreshToken() {
-  console.log(`You can get your client secret from one of your exsiting apps here: ${chalk.blueBright('https://dev.twitch.tv/console/apps')}`);
+  console.log(
+    `You can get your client secret from one of your existing apps here: ${chalk.blueBright(
+      "https://dev.twitch.tv/console/apps"
+    )}`
+  );
   const clientSecret = await promptUserInput("Enter your Twitch Client Secret: ");
   try {
     const response = await axios.post(TOKEN_REFRESH_URL, null, {
@@ -68,17 +77,37 @@ async function refreshToken() {
     // Update the configuration file with the new token
     config.credentials.twitch_token = newToken;
     fs.writeFileSync(CONFIG_FILE, JSON.stringify(config, null, 2));
-    console.log("Token refreshed and saved to config.");
+    console.log(chalk.green("Token refreshed and saved to config."));
   } catch (error) {
-    console.error("Error refreshing token:", error.message);
+    console.error(chalk.red("Error refreshing token:"), error.message);
     process.exit(1);
   }
 }
 
+// Main function
 (async function main() {
+  if (!twitch_client_id || !twitch_token || !twitch_refresh_token) {
+    console.log(chalk.yellow("Missing Twitch credentials. Skipping token validation and starting the bot..."));
+    try {
+      execSync("node index", { stdio: "inherit" });
+    } catch (error) {
+      console.error(chalk.red("Error while starting the bot:"), error.message);
+      process.exit(1);
+    }
+    return;
+  }
+
   const isValid = await validateToken(twitch_token); // Check if token is valid
   if (!isValid) { // If invalid, ask for client secret and refresh
     await refreshToken();
   }
-  process.exit(0); // Exit after process is complete
+
+  // Start the bot
+  console.log(chalk.blue("Starting the bot..."));
+  try {
+    execSync("node index", { stdio: "inherit" });
+  } catch (error) {
+    console.error(chalk.red("Error while starting the bot:"), error.message);
+    process.exit(1);
+  }
 })();
