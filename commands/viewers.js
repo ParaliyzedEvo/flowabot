@@ -24,7 +24,6 @@ module.exports = {
             let { argv } = obj;
             let channel_name = argv[1];
 
-            // Fetch stream information
             twitchHelix.get(`/streams`, {
                 params: { user_login: channel_name }
             }).then(response => {

@@ -57,7 +57,6 @@ module.exports = {
 
                     let beatmap_path = download_path ? download_path : path.resolve(config.osu_cache_path, `${beatmap_id}.osu`);
 
-                    // Use process.env.HOME to get the home directory and construct the oppai path
                     const oppaiPath = path.join('/usr', 'bin', 'oppaiold');
                     const oppaiArgs = [beatmap_path, ...argv.slice(2)];
 

@@ -34,17 +34,16 @@ module.exports = {
             formData.append("Integer12", "on");
             formData.append("BackgroundColor_color", "#FFFFFF");
 
-            // Create an HTTPS agent that disables SSL verification
             const agent = new https.Agent({
-                rejectUnauthorized: false, // Disables certificate verification
+                rejectUnauthorized: false,
             });
 
             axios.post("https://cooltext.com/PostChange", formData, {
                 headers: formData.getHeaders(),
-                httpsAgent: agent, // Use the custom agent
+                httpsAgent: agent,
             }).then(response => {
                 axios.get(response.data.renderLocation, {
-                    httpsAgent: agent, // Use the custom agent
+                    httpsAgent: agent,
                     method: "GET",
                     responseType: "stream"
                 }).then(response => {

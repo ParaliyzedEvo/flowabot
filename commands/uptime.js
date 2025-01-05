@@ -32,7 +32,6 @@ module.exports = {
             const { argv } = obj;
             const channel_name = argv[1];
 
-            // Fetch user information
             twitchHelix.get(`/users`, {
                 params: { login: channel_name }
             }).then(userResponse => {
@@ -45,14 +44,12 @@ module.exports = {
 
                 const user_id = users[0].id;
 
-                // Check if the channel is live
                 twitchHelix.get(`/streams`, {
                     params: { user_id }
                 }).then(streamResponse => {
                     const streams = streamResponse.data.data;
 
                     if (streams.length > 0) {
-                        // Channel is live
                         const stream = streams[0];
                         const uptimeMs = Date.now() - new Date(stream.started_at).getTime();
                         const duration = Duration.fromMillis(uptimeMs);
@@ -63,7 +60,6 @@ module.exports = {
 
                         resolve(`${channel_name} has been live for ${uptime}`);
                     } else {
-                        // Channel is offline, fetch the latest VOD
                         twitchHelix.get(`/videos`, {
                             params: { user_id, type: 'archive', first: 1 }
                         }).then(videoResponse => {
