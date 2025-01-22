@@ -101,3 +101,13 @@
 Thanks to anyone supporting me on [Patreon](https://www.patreon.com/LeaPhant), especialy the following peeps who decided to leave $5 or more per month 😳 
 
 **WitchOfFrost**
+
+### Star History
+
+<a href="https://star-history.com/#Paraliyzedevo/flowabot&Date">
+ <picture>
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Paraliyzedevo/flowabot&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Paraliyzedevo/flowabot&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Paraliyzedevo/flowabot&type=Date" />
+ </picture>
+</a>
