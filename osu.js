@@ -881,6 +881,12 @@ async function getScore(recent_raw, cb){
 			const play = new rosu.Performance(play_params).calculate(rosu_map);
 			const fc_play = new rosu.Performance(fc_play_params).calculate(rosu_map);
 
+            const attributes = new rosu.BeatmapAttributesBuilder({
+				map: rosu_map,
+				mods: recent_raw.mods,
+				clockRate: speed,
+			}).build();
+
 			rosu_map.free();
 
             recent = Object.assign({
