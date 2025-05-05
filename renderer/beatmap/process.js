@@ -93,7 +93,9 @@ class BeatmapProcessor {
 
 	async applySettings () {
 		const { Beatmap, options } = this;
-		const { Mods } = Beatmap;		
+		const { Mods } = Beatmap;
+		
+Beatmap.options = options;		
 
 		if (Mods.has('HR')) {
 			Beatmap.CircleSize = Math.min(10, Beatmap.CircleSize * 1.3);
@@ -183,7 +185,8 @@ class BeatmapProcessor {
 		Beatmap.FollowpointRadius = Beatmap.Radius * 2;
 		Beatmap.ActualFollowpointRadius = Beatmap.Radius * 2.4;
 	
-		Beatmap.StackLeniency = parseFloat(Beatmap.StackLeniency) || 0.7;
+		const stackLeniency = parseFloat(Beatmap.StackLeniency);
+				Beatmap.StackLeniency = isNaN(stackLeniency) ? 0.7 : stackLeniency;
 
 		for (const hitObject of Beatmap.hitObjects) {
 			hitObject.latestHit = hitObject.startTime + Beatmap.HitWindow50;

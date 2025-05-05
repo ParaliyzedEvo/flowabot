@@ -10,7 +10,7 @@ const fs = require('fs').promises;
 
 const { DateTime, Duration } = require('luxon');
 
-const { createCanvas } = require('canvas');
+const { createCanvas, loadImage } = require('canvas');
 
 const ur_calc = require('./renderer/ur.js');
 const frame = require('./renderer/render_frame.js');
@@ -928,7 +928,7 @@ async function getScore(recent_raw, cb){
             let strains_bar;
 
             if(await helper.fileExists(beatmap_path)){
-                strains_bar = await module.exports.get_strains_bar(beatmap_path, recent.mods.map(mod => mod.acronym).join(''), recent.fail_percent, (recent.beatmapset_id == 481703 ? '#31858d' : undefined));
+                strains_bar = await module.exports.get_strains_bar(beatmap_path, recent.mods.map(mod => mod.acronym).join(''), recent.fail_percent, recent.beatmapset_id);
 
                 if(strains_bar)
                     recent.strains_bar = true;
@@ -1459,9 +1459,9 @@ module.exports = {
             icon_url: `https://a.ppy.sh/${recent.creator_id}?${+new Date()}`,
             text: `Mapped by ${recent.creator}${helper.sep}${ranked_text} on ${DateTime.fromISO(ranked_date).toFormat('dd MMMM yyyy')}`
         };
-        embed.thumbnail = {
+        /*embed.thumbnail = {
             url: recent.thumbnail_url
-        };
+        };*/
         let lines = ['', '', '', ''];
 
         lines[0] += `${getRankEmoji(recent.rank)}`;
@@ -1473,28 +1473,27 @@ module.exports = {
 
         if(recent.mods.length > 0)
             lines[0] += `+${sanitizeMods(recent.mods).map(m => m === "DA" ? "__DA__" : m).join(',')}${helper.sep}`;
+        
+        lines[0] += `${+recent.acc.toFixed(2)}%${helper.sep}`;
 
         if(recent.lb > 0)
-            lines[0] += `#${recent.lb}`;
-        if(recent.mods.length > 0 || recent.lb > 0)
-            lines[0] += "\n"
+            lines[0] += `#${recent.lb}${helper.sep}`;
 
         if(recent.legacy_score > 0) {
             let score_string =`${recent.legacy_score.toLocaleString()} (${recent.score.toLocaleString()})`
-            lines[0] += `${score_string}${helper.sep}`;
+            lines[0] += `${score_string}`;
         } else {
             let object_count = recent.count300 + recent.count100 + recent.count50 + recent.countmiss;
             let score_string = `${convertStandardisedToClassic(recent.score, object_count).toLocaleString()} (${recent.score.toLocaleString()})`;
-            lines[0] += `${score_string}${helper.sep}`;
+            lines[0] += `${score_string}`;
         }
 
-        lines[0] += `${+recent.acc.toFixed(2)}%\n`;
-        lines[0] += `<t:${DateTime.fromISO(recent.date).toSeconds()}:R>`;
-
         if(recent.pp_fc.toFixed(2) != recent.pp.toFixed(2))
-            lines[1] += `**${recent.unsubmitted ? '*' : ''}${+recent.pp.toFixed(2)}pp**${recent.unsubmitted ? '*' : ''} ➔ ${+recent.pp_fc.toFixed(2)}pp for ${+recent.acc_fc.toFixed(2)}% FC\n`;
+            lines[1] += `**${recent.unsubmitted ? '*' : ''}${+recent.pp.toFixed(2)}pp**${recent.unsubmitted ? '*' : ''} ➔ ${+recent.pp_fc.toFixed(2)}pp for ${+recent.acc_fc.toFixed(2)}% FC`;
         else
-            lines[1] += `**${+recent.pp.toFixed(2)}pp**\n`
+            lines[1] += `**${+recent.pp.toFixed(2)}pp**`
+
+        lines[1] += `${helper.sep}<t:${DateTime.fromISO(recent.date).toSeconds()}:R>\n`;
 
         if(recent.legacy_perfect)
             lines[1] += `${recent.combo}x`;
@@ -1789,11 +1788,17 @@ module.exports = {
 	        api.get(`/users/${user_id}/scores/best`, { params: { limit: options.count, mode: "osu" } }),
 	        api.get(`/users/${user_id}/osu`)
         ];
+
+        if (options.count > 100)
+			requests.push(api.get(`/users/${user_id}/scores/best`, { params: { limit: 100, offset: 100, mode: "osu" } }));
         
         const results = await Promise.all(requests);
 
         let user_best = results[0].data;
         let user = results[1].data;
+
+        if(options.count > 100)
+			user_best = user_best.concat(results[2].data);
 
         if(user_best.length < 1){
             cb(`No top plays found for ${options.user}. 🤨`);
@@ -2465,18 +2470,38 @@ module.exports = {
 
     calculate_strains: calculateStrains,
 
-	get_strains_bar: async function(osu_file_path, mods_string, progress, color = '#F06292'){
+	gget_strains_bar: async function(osu_file_path, mods_string, progress = 100, beatmapset_id){
+        const BANNER_WIDTH = 900;
+        const BANNER_HEIGHT = 250;
+
+        const BAR_WIDTH = 399;
+        const BAR_HEIGHT = 80;
+ 
+        const BANNER_FACTOR = BAR_WIDTH / BANNER_WIDTH; 
+
+        const GRAPH_HEIGHT = 35;
+        const GRAPH_COLOR = beatmapset_id == 481703 ? '74,165,173' : '252,123,166';
 		let map_strains = await module.exports.get_strains(osu_file_path, mods_string);
 
 		if(!map_strains)
 			return false;
 
 		let { strains, max_strain } = map_strains;
-		let bar = createCanvas(399, 40);
+		let bar = createCanvas(BAR_WIDTH, BAR_HEIGHT);
 		let ctx = bar.getContext('2d');
 
-		ctx.fillStyle = 'transparent';
-		ctx.fillRect(0, 0, 399, 40);
+        const banner = await loadImage(`https://assets.ppy.sh/beatmaps/${beatmapset_id}/covers/cover.jpg`);
+
+        ctx.drawImage(banner, 0, 0, BANNER_WIDTH, BANNER_HEIGHT, 0, BAR_HEIGHT / 2 - BANNER_FACTOR * BANNER_HEIGHT / 2, BAR_WIDTH, BANNER_FACTOR * BANNER_HEIGHT);
+
+        const gradient = ctx.createLinearGradient(0, BAR_HEIGHT, 0, 0);
+
+        gradient.addColorStop(0, "rgba(0,0,0,0.6)");
+        gradient.addColorStop(0.35, "rgba(0,0,0,0.3)");
+        gradient.addColorStop(0.7, "rgba(0,0,0,0)");
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, BAR_WIDTH, BAR_HEIGHT);
 
 		let points = [];
 		let strain_chunks = [];
@@ -2491,44 +2516,74 @@ module.exports = {
 
 		strain_chunks.forEach((strain, index) => {
 			let _strain = strain / max_strain;
-			let x = (index + 1) / strain_chunks.length * 399;
-			let y = Math.min(30, 5 + 35 - _strain * 35);
+			let x = (index + 1) / strain_chunks.length * BAR_WIDTH;
+			let y = Math.min(BAR_HEIGHT - 5, GRAPH_HEIGHT - _strain * (GRAPH_HEIGHT - 5) + (BAR_HEIGHT - GRAPH_HEIGHT));
 			points.push({x, y});
 		});
 
-		ctx.fillStyle = color;
-		ctx.moveTo(0, 40);
-		ctx.lineTo(0, 30);
+        const graphGradient = ctx.createLinearGradient(0, BAR_HEIGHT, 0, BAR_HEIGHT - GRAPH_HEIGHT);
+
+        graphGradient.addColorStop(0, `rgba(${GRAPH_COLOR},0)`);
+        graphGradient.addColorStop(0.8, `rgba(${GRAPH_COLOR},0.7)`);
+
+        if (progress < 1) { 
+            ctx.globalAlpha = 0.7;
+        }
+ 
+		ctx.fillStyle = graphGradient;
+        ctx.beginPath();
+		ctx.moveTo(0, BAR_HEIGHT + 10);
+		ctx.lineTo(0, BAR_HEIGHT - 10);
 
 		for(let i = 1; i < points.length - 2; i++){
-	        var xc = (points[i].x + points[i + 1].x) / 2;
-	        var yc = (points[i].y + points[i + 1].y) / 2;
+            const xc = (points[i].x + points[i + 1].x) / 2;
+	        const yc = (points[i].y + points[i + 1].y) / 2;
 	        ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
 	    }
 
-		ctx.lineTo(399,30);
-		ctx.lineTo(399,40);
+        ctx.lineTo(BAR_WIDTH, points[points.length - 1].y);
+		ctx.lineTo(BAR_WIDTH, BAR_HEIGHT + 10);
 		ctx.closePath();
 		ctx.fill();
 
-		ctx.clearRect(progress * 399, 0, 399 - progress * 399, 40);
+        ctx.globalAlpha = 1;
+        ctx.strokeStyle = `rgb(${GRAPH_COLOR})`;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
 
-		ctx.fillStyle = 'transparent';
-		ctx.fillRect(progress * 399, 0, 399 - progress * 399, 40);
+        ctx.beginPath();
+        ctx.moveTo(0, points[0].y)
 
-		ctx.fillStyle = color;
-		ctx.globalAlpha = 0.5;
-		ctx.moveTo(0, 40);
-		ctx.lineTo(0, 30);
+        for(let i = 1; i < Math.floor((points.length - 2) * progress); i++){
+            const xc = (points[i].x + points[i + 1].x) / 2;
+	        const yc = (points[i].y + points[i + 1].y) / 2;
+	        ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+        }
+
+        if (progress == 1) 
+            ctx.lineTo(BAR_WIDTH, points[points.length - 1].y)
+
+        ctx.stroke();
+
+		if (progress == 1)
+            return bar.toBuffer();
+
+        ctx.beginPath();
+                ctx.moveTo(0, BAR_HEIGHT + 10);
+                ctx.lineTo(0, BAR_HEIGHT - 10);
 
 		for(let i = 1; i < points.length - 2; i++){
-	        var xc = (points[i].x + points[i + 1].x) / 2;
-	        var yc = (points[i].y + points[i + 1].y) / 2;
+            const xc = (points[i].x + points[i + 1].x) / 2;
+	        const yc = (points[i].y + points[i + 1].y) / 2;
+
+            if ((xc / BAR_WIDTH) >= progress)
+                break;
+
 	        ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
 	    }
 
-		ctx.lineTo(399,30);
-		ctx.lineTo(399,40);
+        ctx.lineTo(progress * 399, BAR_HEIGHT - 10);
+		ctx.lineTo(progress * 399, BAR_HEIGHT + 10);
 		ctx.closePath();
 		ctx.fill();
 
