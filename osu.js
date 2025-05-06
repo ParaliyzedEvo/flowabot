@@ -934,8 +934,11 @@ async function getScore(recent_raw, cb){
                     recent.strains_bar = true;
             }
 
+            let ur_promise;
+
             if (recent.replay && await helper.fileExists(beatmap_path)) {
-                let ur_promise = new Promise((resolve, reject) => {
+                // Define the ur_promise properly first
+                ur_promise = new Promise((resolve, reject) => {
                     if (config.debug)
                         helper.log('getting ur');
             
@@ -946,41 +949,51 @@ async function getScore(recent_raw, cb){
                         mods_enabled: getModsEnum(recent_raw.mods.map(x => x.acronym)),
                         score_id: recent.score_id,
                         mods: recent.mods.map(x => x.acronym)
-                    }).then(response => {
-                        if (response && response.ur !== undefined) {
-                            recent.ur = response.ur;
-            
-                            if (recent.countmiss == (response.miss || 0) &&
-                                recent.count100 == (response['100'] || 0) &&
-                                recent.count50 == (response['50'] || 0)) {
-                                recent.countsb = response.sliderbreak;
-                            }
-            
-                            if (recent.mods.map(x => x.acronym).includes("DT") ||
-                                recent.mods.map(x => x.acronym).includes("NC")) {
-                                recent.cvur = response.ur / 1.5;
-                            } else if (recent.mods.map(x => x.acronym).includes("HT")) {
-                                recent.cvur = response.ur * 1.5;
-                            }
-            
-                        } else {
-                            console.warn('UR response is undefined or malformed:', response);
-                            recent.ur = null;
+                    })
+                    .then(response => {
+                        if (!response || typeof response.ur === 'undefined') {
+                            helper.log('Failed to get UR: response is invalid', response);
+                            return reject(new Error('Invalid UR response'));
                         }
             
+                        recent.ur = response.ur;
+            
+                        if (
+                            recent.countmiss == (response.miss || 0) &&
+                            recent.count100 == (response['100'] || 0) &&
+                            recent.count50 == (response['50'] || 0)
+                        ) {
+                            recent.countsb = response.sliderbreak;
+                        }
+            
+                        const mods = recent.mods.map(mod => mod.acronym);
+                        if (mods.includes("DT") || mods.includes("NC"))
+                            recent.cvur = response.ur / 1.5;
+                        else if (mods.includes("HT"))
+                            recent.cvur = response.ur * 1.5;
+            
                         resolve(recent);
-                    }).catch(error => {
-                        console.error('UR calculation failed:', error);
-                        recent.ur = null;
-                        resolve(recent);
+                    })
+                    .catch(err => {
+                        helper.log('Error in ur_calc.get_ur:', err);
+                        reject(err);
                     });
-                });            
-                
+                });
+            
+                // Default fallback values in case of error
                 recent.ur = -1;
-                if(recent.mods.map(mod => mod.acronym).includes("DT") || recent.mods.map(mod => mod.acronym).includes("HT"))
+                const mods = recent.mods.map(mod => mod.acronym);
+                if (mods.includes("DT") || mods.includes("HT"))
                     recent.cvur = -1;
+            
+                // Catch UR promise error to prevent crashes
+                ur_promise = ur_promise.catch(err => {
+                    helper.log('Caught UR promise error (safe fallback):', err);
+                    return recent;
+                });
+            
                 cb(null, recent, strains_bar, ur_promise);
-            }else{
+            } else {
                 cb(null, recent, strains_bar);
             }
         }).catch(helper.error);
@@ -1473,7 +1486,7 @@ module.exports = {
 
         if(recent.mods.length > 0)
             lines[0] += `+${sanitizeMods(recent.mods).map(m => m === "DA" ? "__DA__" : m).join(',')}${helper.sep}`;
-        
+
         lines[0] += `${+recent.acc.toFixed(2)}%${helper.sep}`;
 
         if(recent.lb > 0)
@@ -1493,7 +1506,7 @@ module.exports = {
         else
             lines[1] += `**${+recent.pp.toFixed(2)}pp**`
 
-        lines[1] += `${helper.sep}<t:${DateTime.fromISO(recent.date).toSeconds()}:R>\n`;
+         lines[1] += `${helper.sep}<t:${DateTime.fromISO(recent.date).toSeconds()}:R>\n`;
 
         if(recent.legacy_perfect)
             lines[1] += `${recent.combo}x`;
@@ -1971,14 +1984,14 @@ module.exports = {
 	        api.get(`/users/${user_id}/scores/best`, { params: { limit: 100, mode: "osu" } })
         ];
 
-        if (options.index > 100 || options.rb || options.ob)
+		if (options.index > 100 || options.rb || options.ob)
 			requests.push(api.get(`/users/${user_id}/scores/best`, { params: { limit: 200, offset: 100, mode: "osu" } }));
         
         const results = await Promise.all(requests);
 
         let user_best = results[0].data;
 
-        if(options.index > 100 || options.rb || options.ob)
+		if(options.index > 100 || options.rb || options.ob)
 			user_best = user_best.concat(results[1].data);
 
         if(user_best.length < 1){
@@ -2299,7 +2312,7 @@ module.exports = {
 
             const outputChart = await graphCanvas.renderToBuffer(configuration);
 
-            const graphImage = new Jimp(600, 400, '#263238E6');
+            const graphImage = await Jimp.create(600, 400, '#263238E6');
             const _graph = await Jimp.read(outputChart);
             graphImage.composite(_graph, 0, 0);
 
@@ -2470,17 +2483,18 @@ module.exports = {
 
     calculate_strains: calculateStrains,
 
-	gget_strains_bar: async function(osu_file_path, mods_string, progress = 100, beatmapset_id){
+	get_strains_bar: async function(osu_file_path, mods_string, progress = 100, beatmapset_id){
         const BANNER_WIDTH = 900;
         const BANNER_HEIGHT = 250;
 
         const BAR_WIDTH = 399;
         const BAR_HEIGHT = 80;
- 
+
         const BANNER_FACTOR = BAR_WIDTH / BANNER_WIDTH; 
 
         const GRAPH_HEIGHT = 35;
         const GRAPH_COLOR = beatmapset_id == 481703 ? '74,165,173' : '252,123,166';
+
 		let map_strains = await module.exports.get_strains(osu_file_path, mods_string);
 
 		if(!map_strains)
@@ -2529,19 +2543,19 @@ module.exports = {
         if (progress < 1) { 
             ctx.globalAlpha = 0.7;
         }
- 
+
 		ctx.fillStyle = graphGradient;
         ctx.beginPath();
 		ctx.moveTo(0, BAR_HEIGHT + 10);
-		ctx.lineTo(0, BAR_HEIGHT - 10);
+		ctx.lineTo(0, points[0].y);
 
 		for(let i = 1; i < points.length - 2; i++){
-            const xc = (points[i].x + points[i + 1].x) / 2;
+	        const xc = (points[i].x + points[i + 1].x) / 2;
 	        const yc = (points[i].y + points[i + 1].y) / 2;
 	        ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
 	    }
 
-        ctx.lineTo(BAR_WIDTH, points[points.length - 1].y);
+		ctx.lineTo(BAR_WIDTH, points[points.length - 1].y);
 		ctx.lineTo(BAR_WIDTH, BAR_HEIGHT + 10);
 		ctx.closePath();
 		ctx.fill();
@@ -2562,18 +2576,18 @@ module.exports = {
 
         if (progress == 1) 
             ctx.lineTo(BAR_WIDTH, points[points.length - 1].y)
-
+        
         ctx.stroke();
 
-		if (progress == 1)
+        if (progress == 1)
             return bar.toBuffer();
 
         ctx.beginPath();
-                ctx.moveTo(0, BAR_HEIGHT + 10);
-                ctx.lineTo(0, BAR_HEIGHT - 10);
+		ctx.moveTo(0, BAR_HEIGHT + 10);
+		ctx.lineTo(0, BAR_HEIGHT - 10);
 
 		for(let i = 1; i < points.length - 2; i++){
-            const xc = (points[i].x + points[i + 1].x) / 2;
+	        const xc = (points[i].x + points[i + 1].x) / 2;
 	        const yc = (points[i].y + points[i + 1].y) / 2;
 
             if ((xc / BAR_WIDTH) >= progress)
@@ -2582,7 +2596,7 @@ module.exports = {
 	        ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
 	    }
 
-        ctx.lineTo(progress * 399, BAR_HEIGHT - 10);
+		ctx.lineTo(progress * 399, BAR_HEIGHT - 10);
 		ctx.lineTo(progress * 399, BAR_HEIGHT + 10);
 		ctx.closePath();
 		ctx.fill();

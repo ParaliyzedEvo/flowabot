@@ -11,10 +11,10 @@
         "config": "node generate-config",
         "emojis": "node upload-emojis"
     },
-    "author": "LeaPhant",
+    "author": "Paraliyzed_evo",
     "repository": {
         "type": "git",
-        "url": "https://github.com/LeaPhant/flowabot.git"
+        "url": "https://github.com/Paraliyzedevo/flowabot.git"
     },
     "license": "MIT",
     "dependencies": {
@@ -33,7 +33,7 @@
         "diskusage": "^1.2.0",
         "ffmpeg-static": "^4.3.0",
         "form-data": "^4.0.0",
-        "jimp": "^1.6.0",
+        "jimp": "^0.22.10",
         "lodash": "^4.17.21",
         "luxon": "^1.26.0",
         "lzma-native": "^7.0.1",
@@ -47,6 +47,7 @@
         "ojsama": "^2.2.0",
         "openweather-apis": "^4.4.2",
         "osu-parser": "git+https://github.com/LeaPhant/osu-parser.git",
+        "puppeteer": "^24.8.0",
         "readline-sync": "^1.4.10",
         "rosu-pp-js": "^3.0.0",
         "semver": "^7.3.5",

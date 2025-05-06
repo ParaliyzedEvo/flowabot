@@ -1,5 +1,4 @@
-    const axios = require('axios').default;
-
+const axios = require('axios').default;
 
 module.exports = {
     command: ['define', 'dictionary', 'dict'],
@@ -13,33 +12,41 @@ module.exports = {
     call: obj => {
         return new Promise((resolve, reject) => {   
             let { argv } = obj;
-
             let word = argv.slice(1).join(" ");
 
-            axios.get('https://api.dictionaryapi.dev/api/v2/entries/en/' + word)
-                .then(function (result) {
+            axios.get(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`)
+                .then(result => {
+                    if (!Array.isArray(result.data) || !result.data.length) {
+                        return reject("No definition found for that word.");
+                    }
+
+                    const data = result.data[0];
                     let fields = [];
 
-
-                        for (let val of result.data) {
-                            for (let element of val.meanings) {
-                                fields.push({name: element.partOfSpeech, value: element.definitions[0].definition });
-                            }
+                    for (const meaning of data.meanings) {
+                        if (meaning.definitions.length > 0) {
+                            fields.push({
+                                name: meaning.partOfSpeech,
+                                value: meaning.definitions[0].definition
+                            });
                         }
-                        resolve({
-                            embed: {
-                                description: result.data[0].phonetic,
-                                color: 12277111,
-                                author: {
-                                    name: result.data[0].word
-                                },
-                                fields: fields
-                            }
-                        });
+                    }
+
+                    resolve({
+                        embed: {
+                            description: data.phonetic || '',
+                            color: 12277111,
+                            author: {
+                                name: data.word
+                            },
+                            fields: fields.length ? fields : [{ name: "Definition", value: "No definitions found." }]
+                        }
+                    });
                 })
-                .catch(function (error) {
-                    reject(error.response.data.message);
-                })
+                .catch(error => {
+                    const errMsg = error?.response?.data?.message || 'Unable to find that word.';
+                    reject(errMsg);
+                });
         });
     }
 };

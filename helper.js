@@ -92,34 +92,36 @@ module.exports = {
                     });
                 }
 
-                if(command.example){
+                if (command && command.example) {
                     let examples = command.example;
                     let examples_value = "";
                     let examples_name = "Example";
-
-                    if(!Array.isArray(examples))
+                
+                    if (!Array.isArray(examples))
                         examples = [examples];
-
-                    if(examples.length > 1)
+                
+                    if (examples.length > 1)
                         examples_name += "s";
-
+                
                     examples.forEach((example, index) => {
-                        if(index > 0)
+                        if (index > 0)
                             examples_value += "\n\n";
-
-                        if(typeof example === 'object'){
+                
+                        if (typeof example === 'object') {
                             examples_value += `${cmd_escape}${config.prefix}${example.run}${cmd_escape}`;
-                            examples_value += example.result;
-                        }else{
+                            if (example.example || example.result) {
+                                examples_value += `\n${example.example || example.result}`;
+                            }
+                        } else {
                             examples_value += `${cmd_escape}${config.prefix}${example}${cmd_escape}`;
                         }
                     });
-
+                
                     embed.fields.push({
                         name: examples_name,
                         value: examples_value + "\n"
-                    })
-                }
+                    });
+                }                
 
                 return {embed: embed};
             }

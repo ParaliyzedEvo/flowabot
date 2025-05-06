@@ -1,11 +1,4 @@
-const axios = require('axios');
-const helper = require('../helper.js');
-const cheerio = require('cheerio');
-
-const emojipedia = axios.create({
-    baseURL: 'https://emojipedia.org',
-    responseType: 'document'
-})
+const puppeteer = require('puppeteer');
 
 module.exports = {
     command: 'emojipedia',
@@ -16,43 +9,62 @@ module.exports = {
         run: "emojipedia 🤔",
         result: "Returns thinking emoji on all platforms."
     },
-    call: obj => {
-        return new Promise((resolve, reject) => {
-            let { argv, msg } = obj;
+    call: async (obj) => {
+        const { argv, msg } = obj;
+        const emoji = argv.slice(1).join('').trim();
 
-            let emoji = encodeURIComponent(argv.slice(1).join('').trim());
+        if (!emoji) return Promise.reject("Please provide an emoji to look up.");
 
-            emojipedia.get(`/${emoji}/`).then(response => {
-                let $ = cheerio.load(response.data);
-                let embeds = [], promises = [];
+        try {
+            const browser = await puppeteer.launch({ headless: 'new' });
+            const page = await browser.newPage();
 
-                $('.vendor-rollout-target').each(function(){
-                        let vendor = $(this).find('.vendor-info a');
-                        let vendor_name = vendor.text();
-                        let vendor_url = "https://emojipedia.org" + vendor.attr('href');
-                        let img = $(this).find('img').attr('srcset').replace('/240/', '/60/').split(" ")[0];
-                        embeds.push({ embed:
-                            {
-                                title: vendor_name,
-                                url: vendor_url,
-                                thumbnail: {
-                                    url: img
-                                }
-                            }
-                        });
-                });
+            const encodedEmoji = encodeURIComponent(emoji);
+            const url = `https://emojipedia.org/${encodedEmoji}/#designs`;
 
-                embeds.forEach(function(embed){
-                    promises.push(msg.channel.send(embed));
-                });
+            await page.goto(url, { waitUntil: 'domcontentloaded' });
 
-                promises.reduce((p, fn) => p.then(fn), Promise.resolve());
+            // Scroll to the bottom to trigger lazy loading
+            await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+            await new Promise(resolve => setTimeout(resolve, 3000));
 
-                resolve();
-            }).catch(err => {
-                helper.error(err);
-                reject(`Couldn't find emoji`);
+            const results = await page.evaluate(() => {
+                const pins = Array.from(document.querySelectorAll("section"))
+                    .flatMap(section => Array.from(section.querySelectorAll("a > img")))
+                    .map(img => {
+                        const pinContainer = img.closest("a")?.closest("div")?.parentElement;
+                        const dateElem = pinContainer?.querySelector("time");
+                        const versionElem = pinContainer?.querySelector("strong");
+
+                        return {
+                            img: img.src,
+                            date: dateElem?.innerText.trim() || "Unknown Date",
+                            version: versionElem?.innerText.trim() || "Unknown Version"
+                        };
+                    });
+
+                return pins.filter(e => e.img);
             });
-        });
+
+            await browser.close();
+
+            if (!results.length) return Promise.reject("Couldn't find emoji designs.");
+
+            for (const result of results) {
+                await msg.channel.send({
+                    embeds: [{
+                        title: `Emoji Design: ${emoji}`,
+                        description: `Version: ${result.version}\nDate: ${result.date}`,
+                        thumbnail: { url: result.img },
+                        url
+                    }]
+                });
+            }
+
+            return Promise.resolve();
+        } catch (err) {
+            console.error(err);
+            return Promise.reject("Error fetching emoji data.");
+        }
     }
 };

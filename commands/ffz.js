@@ -28,7 +28,6 @@ module.exports = {
             ffzApi.get('/emoticons', {
                 params: {
                     q: q,
-                    sort: 'count',
                     per_page: 200
                 }
             }).then(response => {
