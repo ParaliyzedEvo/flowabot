@@ -19,7 +19,7 @@ socket.addEventListener("message", (payload) => {
 		const isValidData = (path) => {
 			// Ensure the path is a relative path, does not contain dangerous patterns, and ends with a valid extension
 			const allowedExtensions = ['.mp4', '.gif'];
-			const isRelativePath = path.startsWith('/') && !path.includes('..') && !path.includes('\\');
+			const isRelativePath = path.startsWith('/') && !path.includes('..') && !path.includes('\\') && /^[a-zA-Z0-9/_-]+$/.test(path);
 			return isRelativePath && allowedExtensions.some(ext => path.endsWith(ext));
 		};
 
@@ -40,7 +40,7 @@ socket.addEventListener("message", (payload) => {
 
 		if (!outputElement) return;
 
-		outputElement.src = encodeURI(`${data}?${Date.now()}`);
+		outputElement.src = encodeURI(`/${data}?${Date.now()}`);
 		elemOutput.replaceChildren(outputElement);
 	}
 });
