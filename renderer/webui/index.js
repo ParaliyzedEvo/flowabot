@@ -16,6 +16,17 @@ socket.addEventListener("message", (payload) => {
 	if (event == 'complete') {
 		let outputElement;
 
+		const isValidData = (path) => {
+			// Ensure the path is a relative path and ends with a valid extension
+			const allowedExtensions = ['.mp4', '.gif'];
+			return path.startsWith('/') && allowedExtensions.some(ext => path.endsWith(ext));
+		};
+
+		if (!isValidData(data)) {
+			console.error('Invalid data received:', data);
+			return;
+		}
+
 		if (data.endsWith('.mp4')) {
 			outputElement = document.createElement('video');
 			outputElement.controls = true;
