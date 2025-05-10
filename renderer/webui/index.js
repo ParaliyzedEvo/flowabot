@@ -7,7 +7,7 @@ const socket = new WebSocket("ws://localhost:7271");
 socket.addEventListener("message", (payload) => {
 	const { event, data } = JSON.parse(payload.data);
 
-	console.log(event, data);
+	console.log("%s", event, data);
 
 	if (event == 'progress') {
 		elemProgress.innerHTML = data;
