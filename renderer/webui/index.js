@@ -28,11 +28,6 @@ socket.addEventListener("message", (payload) => {
 			return allowedPaths.includes(path);
 		};
 
-		if (!isValidData(data)) {
-			console.error('Invalid data received:', data);
-			return;
-		}
-
 		if (data.endsWith('.mp4')) {
 			outputElement = document.createElement('video');
 			outputElement.controls = true;
