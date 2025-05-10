@@ -10,7 +10,7 @@ socket.addEventListener("message", (payload) => {
 	console.log("%s", event, data);
 
 	if (event == 'progress') {
-		elemProgress.innerHTML = data;
+		elemProgress.textContent = data;
 	}
 
 	if (event == 'complete') {
