@@ -17,10 +17,15 @@ socket.addEventListener("message", (payload) => {
 		let outputElement;
 
 		const isValidData = (path) => {
-			// Ensure the path is a relative path, does not contain dangerous patterns, and ends with a valid extension
-			const allowedExtensions = ['.mp4', '.gif'];
-			const isRelativePath = path.startsWith('/') && !path.includes('..') && !path.includes('\\') && /^[a-zA-Z0-9/_-]+$/.test(path);
-			return isRelativePath && allowedExtensions.some(ext => path.endsWith(ext));
+			// Define a whitelist of allowed paths
+			const allowedPaths = [
+				'video1.mp4',
+				'video2.mp4',
+				'animation1.gif',
+				'animation2.gif'
+			];
+			// Check if the path is in the whitelist
+			return allowedPaths.includes(path);
 		};
 
 		if (!isValidData(data)) {
