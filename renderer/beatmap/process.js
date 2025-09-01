@@ -360,7 +360,7 @@ Beatmap.options = options;
 
 		// trim beatmap
 		Beatmap.hitObjects[Beatmap.hitObjects.length - 1].lastObject = true;
-    	Beatmap.hitObjects = Beatmap.hitObjects.slice(firstHitobjectIndex, lastHitobjectIndex + 1);
+    	//Beatmap.hitObjects = Beatmap.hitObjects.slice(firstHitobjectIndex, lastHitobjectIndex + 1);
 	}
 
 	async applyCounter() {
