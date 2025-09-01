@@ -32,7 +32,7 @@
         "discord.js": "^12.5.3",
         "diskusage": "^1.2.0",
         "ffmpeg-static": "^4.3.0",
-        "form-data": "^4.0.0",
+        "form-data": "^4.0.4",
         "jimp": "^0.22.10",
         "lodash": "^4.17.21",
         "luxon": "^1.26.0",
