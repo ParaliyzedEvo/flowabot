@@ -1,70 +1,59 @@
-const puppeteer = require('puppeteer');
+const axios = require('axios');
 
 module.exports = {
     command: 'emojipedia',
-    description: "Look up what an emoji looks like on all platforms (warning: spammy).",
+    description: "Look up what an emoji looks like on all platforms.",
     argsRequired: 1,
     usage: '<emoji>',
     example: {
         run: "emojipedia 🤔",
-        result: "Returns thinking emoji on all platforms."
+        result: "Returns thinking emoji information."
     },
     call: async (obj) => {
         const { argv, msg } = obj;
         const emoji = argv.slice(1).join('').trim();
-
-        if (!emoji) return Promise.reject("Please provide an emoji to look up.");
+        
+        if (!emoji) {
+            return Promise.reject("Please provide an emoji to look up.");
+        }
 
         try {
-            const browser = await puppeteer.launch({ headless: 'new' });
-            const page = await browser.newPage();
+            const codepoints = Array.from(emoji).map(char => 
+                char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')
+            );
+            
+            const codepointDisplay = codepoints.map(cp => `U+${cp}`).join(' ');
+            
+            const embed = {
+                title: `${emoji} Emoji Information`,
+                description: [
+                    `**Unicode:** ${codepointDisplay}`,
+                    ``,
+                    `**Platform Designs:**`,
+                    `• Native Discord: ${emoji}`,
+                    `• [Twemoji PNG](https://twemoji.maxcdn.com/v/latest/72x72/${codepoints[0].toLowerCase()}.png)`,
+                    `• [OpenMoji SVG](https://openmoji.org/data/color/svg/${codepoints[0]}.svg)`,
+                    `• [All Platforms](https://emojipedia.org/${encodeURIComponent(emoji)})`
+                ].join('\n'),
+                color: 0x3498db
+            };
 
-            const encodedEmoji = encodeURIComponent(emoji);
-            const url = `https://emojipedia.org/${encodedEmoji}/#designs`;
+            console.log('Sending embed:', JSON.stringify(embed, null, 2));
 
-            await page.goto(url, { waitUntil: 'domcontentloaded' });
-
-            // Scroll to the bottom to trigger lazy loading
-            await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
-            await new Promise(resolve => setTimeout(resolve, 3000));
-
-            const results = await page.evaluate(() => {
-                const pins = Array.from(document.querySelectorAll("section"))
-                    .flatMap(section => Array.from(section.querySelectorAll("a > img")))
-                    .map(img => {
-                        const pinContainer = img.closest("a")?.closest("div")?.parentElement;
-                        const dateElem = pinContainer?.querySelector("time");
-                        const versionElem = pinContainer?.querySelector("strong");
-
-                        return {
-                            img: img.src,
-                            date: dateElem?.innerText.trim() || "Unknown Date",
-                            version: versionElem?.innerText.trim() || "Unknown Version"
-                        };
-                    });
-
-                return pins.filter(e => e.img);
-            });
-
-            await browser.close();
-
-            if (!results.length) return Promise.reject("Couldn't find emoji designs.");
-
-            for (const result of results) {
-                await msg.channel.send({
-                    embeds: [{
-                        title: `Emoji Design: ${emoji}`,
-                        description: `Version: ${result.version}\nDate: ${result.date}`,
-                        thumbnail: { url: result.img },
-                        url
-                    }]
-                });
-            }
-
+            await msg.channel.send({ embeds: [embed] });
             return Promise.resolve();
-        } catch (err) {
-            console.error(err);
-            return Promise.reject("Error fetching emoji data.");
+
+        } catch (error) {
+            console.error('Error in emojipedia command:', error);
+            try {
+                await msg.channel.send({
+                    content: `Emoji: ${emoji}\nView designs: https://emojipedia.org/${encodeURIComponent(emoji)}`
+                });
+                return Promise.resolve();
+            } catch (fallbackError) {
+                console.error('Even simple fallback failed:', fallbackError);
+                return Promise.reject("Unable to send emoji information.");
+            }
         }
     }
-};
+}
