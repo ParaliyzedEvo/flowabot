@@ -829,6 +829,22 @@ process.on('message', async obj => {
             if(currentFrame == null)
                 currentFrame = beatmap.ScoringFrames[beatmap.ScoringFrames.length - 1];
 
+            const currentSpinner = beatmap.hitObjects.find(a => time >= a.startTime && time < a.endTime && a.objectName == 'spinner');
+
+            if (currentSpinner) {
+                const rpmPosition = playfieldPosition(PLAYFIELD_WIDTH / 2, PLAYFIELD_HEIGHT - 30);
+
+                let fontSize = 22;
+                ctx.globalAlpha = 1;
+                ctx.fillStyle = "white";
+                ctx.textBaseline = "middle";
+                ctx.textAlign = "center";
+                ctx.font = `${fontSize}px monospace`;
+                const rpm = currentFrame.rpm ? Math.round(currentFrame.rpm) : 0;
+                const pad = " ".repeat(4 - rpm.toString().length);
+                ctx.fillText(`RPM${pad}${rpm}`, ...rpmPosition);
+            }
+
             const scoringFrames = [];
 
             if(options.flashlight){
@@ -925,7 +941,31 @@ process.on('message', async obj => {
                 ctx.textAlign = "right";
                 ctx.textBaseline = "top";
                 ctx.font = `${26 * scale_multiplier}px monospace`;
-                ctx.fillText(`${currentFrame.accuracy.toFixed(2)}%`, ...accuracyPosition);
+
+                const accText = `${currentFrame.accuracy.toFixed(2)}%`;
+                ctx.fillText(accText, ...accuracyPosition);
+
+                const accTextSize = ctx.measureText(accText);
+                const pieRadius = 12 * scale_multiplier;
+                const piePosition = [
+                    accuracyPosition[0] - accTextSize.width - pieRadius - 5,
+                    accuracyPosition[1] + (accTextSize.actualBoundingBoxDescent - accTextSize.actualBoundingBoxAscent) / 2
+                ];
+
+                ctx.strokeStyle = "white";
+                ctx.lineWidth = 2 * scale_multiplier;
+                
+                ctx.beginPath();
+                ctx.arc(...piePosition, pieRadius, 0, Math.PI * 2);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(...piePosition);
+
+                const completion = time / (beatmap.totalTime * 1000) * 2 * Math.PI - Math.PI / 2;
+
+                ctx.arc(...piePosition, pieRadius, -Math.PI/2, completion);
+                ctx.fill();
 
                 const hitCountPosition = [canvas.width - 15, 45 + 26 * scale_multiplier];
 
@@ -941,16 +981,11 @@ process.on('message', async obj => {
                 ctx.font = `${26 * scale_multiplier}px monospace`;
 
                 let urText = 'UR';
-                let { ur } = currentFrame;
+                let { ur, cvur } = currentFrame;
 
-                if(beatmap.Replay && (beatmap.Replay.Mods.includes('DT') || beatmap.Replay.Mods.includes('NC') || beatmap.Replay.Mods.includes("HT"))){
+                if(beatmap.SpeedMultiplier != 1){
                     urText = 'cvUR';
-
-                    if(beatmap.Replay.Mods.includes('DT') || beatmap.Replay.Mods.includes('NC'))
-                        ur /= 1.5;
-
-                    if(beatmap.Replay.Mods.includes('HT'))
-                        ur /= 0.75;
+                    ur = cvur;
                 }
 
                 ctx.fillText(`${ur.toFixed(2)} ${urText}`, ...urPosition);
@@ -980,6 +1015,8 @@ process.on('message', async obj => {
                 ctx.fillStyle = 'rgb(255,255,255,0.8)';
 
                 ctx.fillText('W.I.P. – scoring not accurate yet', 15, canvas.height - 10);
+
+                ctx.textAlign = "right";
             }
 
             for(const scoringFrame of scoringFrames){

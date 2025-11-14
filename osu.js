@@ -934,66 +934,37 @@ async function getScore(recent_raw, cb){
                     recent.strains_bar = true;
             }
 
-            let ur_promise;
-
-            if (recent.replay && await helper.fileExists(beatmap_path)) {
-                // Define the ur_promise properly first
-                ur_promise = new Promise((resolve, reject) => {
-                    if (config.debug)
+            if(recent.replay && await helper.fileExists(beatmap_path)){
+                let ur_promise = new Promise((resolve, reject) => {
+                    if(config.debug)
                         helper.log('getting ur');
-            
-                    ur_calc.get_ur({
-                        access_token: access_token,
-                        player: recent_raw.user_id,
-                        beatmap_id: recent_raw.beatmap.id,
-                        mods_enabled: recent_raw.mods,
-                        score_id: recent.score_id,
-                        mods: recent.mods.map(x => x.acronym)
-                    })
-                    .then(response => {
-                        if (!response || typeof response.ur === 'undefined') {
-                            helper.log('Failed to get UR: response is invalid', response);
-                            return reject(new Error('Invalid UR response'));
-                        }
-            
-                        recent.ur = response.ur;
-            
-                        if (
-                            recent.countmiss == (response.miss || 0) &&
-                            recent.count100 == (response['100'] || 0) &&
-                            recent.count50 == (response['50'] || 0)
-                        ) {
-                            recent.countsb = response.sliderbreak;
-                        }
-            
-                        const mods = recent.mods.map(mod => mod.acronym);
-                        if (mods.includes("DT") || mods.includes("NC"))
-                            recent.cvur = response.ur / 1.5;
-                        else if (mods.includes("HT"))
-                            recent.cvur = response.ur * 1.5;
-            
-                        resolve(recent);
-                    })
-                    .catch(err => {
-                        helper.log('Error in ur_calc.get_ur:', err);
-                        reject(err);
-                    });
+
+                    ur_calc.get_ur(
+                        {
+                            access_token: access_token,
+                            player: recent_raw.user_id,
+                            beatmap_id: recent_raw.beatmap.id,
+                            mods_enabled: recent_raw.mods,
+                            score_id: recent.score_id,
+                            mods: recent.mods.map(x => x.acronym)
+                        }).then(response => {
+                            recent.ur = response.ur;
+                            recent.cvur = response.cvur;
+
+                            if(recent.countmiss == (response.miss || 0) 
+                            && recent.count100 == (response['100'] || 0)
+                            && recent.count50 == (response['50'] || 0))
+                                recent.countsb = response.sliderbreak;
+
+                            resolve(recent);
+                        });
                 });
-            
-                // Default fallback values in case of error
+
                 recent.ur = -1;
-                const mods = recent.mods.map(mod => mod.acronym);
-                if (mods.includes("DT") || mods.includes("HT"))
+                if(recent.mods.map(mod => mod.acronym).includes("DT") || recent.mods.map(mod => mod.acronym).includes("HT"))
                     recent.cvur = -1;
-            
-                // Catch UR promise error to prevent crashes
-                ur_promise = ur_promise.catch(err => {
-                    helper.log('Caught UR promise error (safe fallback):', err);
-                    return recent;
-                });
-            
                 cb(null, recent, strains_bar, ur_promise);
-            } else {
+            }else{
                 cb(null, recent, strains_bar);
             }
         }).catch(helper.error);
@@ -1075,9 +1046,9 @@ async function updateTrackedUsers(){
                                     tracked_users[user].channels.forEach(channel_id => {
                                         let channel = discord_client.channels.cache.get(channel_id);
                                         if(channel)
-                                            channel.send(`${recent.username} got a new #${recent.pb} top play!`,
-												{
-													embed,
+                                            channel.send({
+                                                    content: `${recent.username} got a new #${recent.pb} top play!`,
+													embeds: [embed],
 													files: [{attachment: strains_bar, name: 'strains_bar.png'}]
 												}
 											).then(() => {
@@ -1090,9 +1061,9 @@ async function updateTrackedUsers(){
                                 tracked_users[user].channels.forEach(channel_id => {
                                     let channel = discord_client.channels.cache.get(channel_id);
                                     if(channel)
-                                        channel.send(`${recent.username} got a new #${recent.pb} top play!`,
-											{
-												embed,
+                                        channel.send({
+                                                content: `${recent.username} got a new #${recent.pb} top play!`,
+												embeds: [embed],
 												files: [{attachment: strains_bar, name: 'strains_bar.png'}]
 											})
 										.then(() => {
@@ -1540,7 +1511,7 @@ module.exports = {
         if(recent.ur > 0){
             if(recent.count100 > 0 || recent.count50 > 0 || recent.countmiss > 0) lines[1] += helper.sep;
             lines[1] += `${+recent.ur.toFixed(2)} UR`;
-            if(recent.cvur)
+            if(recent.cvur != recent.ur)
                 lines[1] += ` (${+recent.cvur.toFixed(2)}cv)`;
         }else if(recent.ur < 0){
             if(recent.count100 > 0 || recent.count50 > 0 || recent.countmiss > 0) lines[1] += helper.sep;
@@ -2312,7 +2283,7 @@ module.exports = {
 
             const outputChart = await graphCanvas.renderToBuffer(configuration);
 
-            const graphImage = await Jimp.create(600, 400, '#263238E6');
+            const graphImage = new Jimp(600, 400, '#263238E6');
             const _graph = await Jimp.read(outputChart);
             graphImage.composite(_graph, 0, 0);
 
@@ -2548,6 +2519,7 @@ module.exports = {
 
         graphGradient.addColorStop(0, `rgba(${GRAPH_COLOR},0)`);
         graphGradient.addColorStop(0.8, `rgba(${GRAPH_COLOR},0.7)`);
+
 
         if (progress < 1) { 
             ctx.globalAlpha = 0.7;

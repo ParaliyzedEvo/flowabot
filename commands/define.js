@@ -33,14 +33,14 @@ module.exports = {
                     }
 
                     resolve({
-                        embed: {
+                        embeds: [{
                             description: data.phonetic || '',
                             color: 12277111,
                             author: {
                                 name: data.word
                             },
                             fields: fields.length ? fields : [{ name: "Definition", value: "No definitions found." }]
-                        }
+                        }]
                     });
                 })
                 .catch(error => {

@@ -3,7 +3,9 @@ const path = require('path');
 
 const osuBeatmapParser = require('osu-parser');
 const axios = require('axios');
+const booba = require('booba');
 
+const helper = require('../../helper');
 const config = require('../../config.json');
 
 const { difficultyRange, float } = require('./util');
@@ -39,17 +41,6 @@ class BeatmapProcessor {
 	}
 
 	async parseBeatmap () {
-		this.osuContents = await fs.readFile(this.beatmap_path, 'utf8');
-
-		const Beatmap = osuBeatmapParser.parseContent(this.osuContents);
-
-		Beatmap.CircleSize = Number(Beatmap.CircleSize ?? 5);
-		Beatmap.OverallDifficulty =  Number(Beatmap.OverallDifficulty ?? 5);
-		// Very old maps use the OD as the AR 
-		Beatmap.ApproachRate = Number(Beatmap.ApproachRate ?? Beatmap.OverallDifficulty ?? 5);
-
-		console.time("download/parse replay");
-
 		let Replay;
 
 		if (this.options.score_id) {
@@ -67,15 +58,44 @@ class BeatmapProcessor {
 
 				Replay = await parseReplay(response.data);
 				
-				if (Replay.score_info) {
-					this.mods_raw = Replay.score_info.mods;
-				}
+				if (Replay?.mods != null) {
+                    const mods = new booba.Mods(Replay.mods).toString(false).split(",").map(x => { return { acronym: x }});
+                    this.mods_raw = mods;
+                }
+
+                if (Replay?.score_info) {
+                    this.mods_raw = Replay.score_info.mods;
+                }
 			} catch(e) {
 				console.error(e);
 
 				throw "Couldn't download replay";
 			}
 		}
+
+		if (Replay?.beatmapMD5 && 
+            (!this.beatmap_path || await helper.fileMd5(this.beatmap_path) != Replay.beatmapMD5)) {
+
+            try {
+                const newBeatmapPath = await helper.downloadBeatmapByMd5(Replay.beatmapMD5);
+
+                if (newBeatmapPath)
+                    this.beatmap_path = newBeatmapPath;
+            } catch(e) {
+                //
+            }
+        }
+
+		this.osuContents = await fs.readFile(this.beatmap_path, 'utf8');
+
+		const Beatmap = osuBeatmapParser.parseContent(this.osuContents);
+
+		Beatmap.CircleSize = Number(Beatmap.CircleSize ?? 5);
+		Beatmap.OverallDifficulty =  Number(Beatmap.OverallDifficulty ?? 5);
+		// Very old maps use the OD as the AR 
+		Beatmap.ApproachRate = Number(Beatmap.ApproachRate ?? Beatmap.OverallDifficulty ?? 5);
+
+		console.time("download/parse replay");
 
 		Beatmap.Replay = Replay;
 
@@ -87,6 +107,8 @@ class BeatmapProcessor {
 		for (const mod of this.mods_raw) {
 			Mods.set(mod.acronym, mod.settings ?? {});
 		}
+
+		console.log("MODS", this.mods_raw);
 
 		return Beatmap;
 	}
@@ -162,7 +184,7 @@ Beatmap.options = options;
 		for (const key in hitWindows) {
 			let judgement = hitWindows[key];
 	
-			if (Mods.has('CL'))
+			//if (Mods.has('CL'))
 				judgement -= 0.5;
 	
 			//if (!options.od)
@@ -303,7 +325,7 @@ Beatmap.options = options;
 			let firstNonSpinner = Beatmap.hitObjects.filter(x => x.objectName != 'spinner');
 	
 			if (firstNonSpinner.length == 0)
-				firstNonSpinner = Beatmap.hitObjects[0];
+				firstNonSpinner = [Beatmap.hitObjects[0]]
 	
 			time = Math.max(time, Math.max(0, firstNonSpinner[0].startTime - 1000));
 		}
@@ -407,7 +429,9 @@ Beatmap.options = options;
 		await this.applyStacking();
         await this.applyReplay();
 
-        return this.Beatmap.ScoringFrames?.pop()?.ur;
+        const lastFrame = this.Beatmap.ScoringFrames?.pop();
+
+        return { ur: lastFrame?.ur, cvur: lastFrame?.cvur };
     }
 }
 const processBeatmap = async (beatmap_path, options, mods_raw, time, length, ur_only = false) => {

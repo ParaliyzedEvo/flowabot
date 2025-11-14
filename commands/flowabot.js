@@ -44,6 +44,6 @@ module.exports = {
             ]
         };
 
-        return {embed: embed};
+        return {embeds: [embed]};
     }
 };

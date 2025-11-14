@@ -5,7 +5,7 @@ process.on('uncaughtException', function(err){
     console.error(err.stack);
 });
 
-const Discord = require('discord.js');
+const { Client, GatewayIntentBits, Partials } = require('discord.js');
 const fs = require('fs').promises;
 const path = require('path');
 const objectPath = require("object-path");
@@ -14,7 +14,7 @@ const chalk = require('chalk');
 const osu = require('./osu.js');
 const helper = require('./helper.js');
 
-const client = new Discord.Client({autoReconnect:true, disableMentions: "everyone"});
+const client = new Client({ intents: Object.values(GatewayIntentBits), partials: Object.values(Partials) });
 
 client.on('error', helper.error);
 
@@ -250,9 +250,9 @@ function onMessage(msg){
 						}
 
 						if(content)
-	                        message_promise = msg.channel.send(content, response);
-						else
-							message_promise = msg.channel.send(response);
+                            response.content = content;
+
+	                        message_promise = msg.channel.send(response);
 
 						message_promise.catch(err => {
 							msg.channel.send(`Couldn't run command: **${err}**`);
@@ -318,7 +318,7 @@ function onMessage(msg){
     });
 }
 
-client.on('message', onMessage);
+client.on('messageCreate', onMessage);
 
 client.on('ready', () => {
 	helper.log('flowabot is ready');

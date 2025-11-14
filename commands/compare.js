@@ -3,7 +3,7 @@ const helper = require('../helper.js');
 
 async function getBeatmapIdFromMessage(msg) {
     if (msg.reference) {
-        const replied_msg = await msg.channel.messages.fetch(msg.reference.messageID)
+        const replied_msg = await msg.channel.messages.fetch(msg.reference.messageId)
         const beatmap_id = osu.parse_beatmap_url(replied_msg.embeds[0].url)
         return beatmap_id
     } else {
@@ -89,17 +89,17 @@ module.exports = {
     
                             if(ur_promise){
                                 resolve({
-                                    embed: embed,
+                                    embeds: [embed],
                                     files: [{attachment: strains_bar, name: 'strains_bar.png'}],
                                     edit_promise: new Promise((resolve, reject) => {
                                         ur_promise.then(recent => {
                                             embed = osu.format_embed(recent);
-                                            resolve({embed});
+                                            resolve({ embeds: [embed] });
                                         });
                                     })});
                             }else{
                                 resolve({
-                                    embed: embed,
+                                    embeds: [embed],
                                     files: [{attachment: strains_bar, name: 'strains_bar.png'}]
                                 });
                             }
