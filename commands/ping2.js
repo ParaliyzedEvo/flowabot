@@ -7,7 +7,7 @@ module.exports = {
     usage: '<url>',
     example: [
         {
-            run: "ping google.com",
+            run: "ping2 google.com",
             result: "Returns the time it took to ping google.com"
         },
     ],
