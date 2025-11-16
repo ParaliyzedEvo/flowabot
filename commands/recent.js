@@ -63,6 +63,9 @@ module.exports = {
                                     ur_promise.then(recent => {
                                         embed = osu.format_embed(recent);
                                         resolve({ embeds: [embed] });
+                                    }).catch(err => {
+                                        helper.error('UR calculation failed:', err);
+                                        resolve(null);
                                     });
                                 })});
                         }else{

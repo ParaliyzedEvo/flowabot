@@ -227,6 +227,7 @@ class ReplayProcessor {
                 let radius = 60;
 
                 let rotations = (hitObject.endTime - hitObject.startTime) / 1000 * rps;
+				let MAX_RADIAN = 2 * Math.PI;
 
                 for(let x = 0; x < rotations; x++){
                     let rotationLength = Math.min(1, rotations - x);

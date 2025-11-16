@@ -91,7 +91,7 @@ function checkCommand(msg, command){
         let hasPermission = true;
 
         if(command.permsRequired && msg.member != null)
-            hasPermission = command.permsRequired.length == 0 || command.permsRequired.some(perm => msg.member.hasPermission(perm));
+            hasPermission = command.permsRequired.length == 0 || command.permsRequired.some(perm => msg.member.permissions.has(perm));
 
         if(!hasPermission)
             return 'Insufficient permissions for running this command.';

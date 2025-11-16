@@ -1,4 +1,4 @@
-const axios = require('axios');
+const { EmbedBuilder } = require('discord.js');
 
 module.exports = {
     command: 'emojipedia',
@@ -10,7 +10,7 @@ module.exports = {
         result: "Returns thinking emoji information."
     },
     call: async (obj) => {
-        const { argv, msg } = obj;
+        const { argv } = obj;
         const emoji = argv.slice(1).join('').trim();
         
         if (!emoji) {
@@ -18,42 +18,32 @@ module.exports = {
         }
 
         try {
+            // Get Unicode codepoints
             const codepoints = Array.from(emoji).map(char => 
                 char.codePointAt(0).toString(16).toUpperCase().padStart(4, '0')
             );
             
             const codepointDisplay = codepoints.map(cp => `U+${cp}`).join(' ');
+            const joinedCodepoints = codepoints.join('-').toLowerCase();
             
-            const embed = {
-                title: `${emoji} Emoji Information`,
-                description: [
+            // Create embed using EmbedBuilder
+            const embed = new EmbedBuilder()
+                .setTitle(`${emoji} Emoji Information`)
+                .setDescription([
                     `**Unicode:** ${codepointDisplay}`,
                     ``,
                     `**Platform Designs:**`,
                     `• Native Discord: ${emoji}`,
-                    `• [Twemoji PNG](https://twemoji.maxcdn.com/v/latest/72x72/${codepoints[0].toLowerCase()}.png)`,
-                    `• [OpenMoji SVG](https://openmoji.org/data/color/svg/${codepoints[0]}.svg)`,
-                    `• [All Platforms](https://emojipedia.org/${encodeURIComponent(emoji)})`
-                ].join('\n'),
-                color: 0x3498db
-            };
+                    `• [View on Emojipedia](https://emojipedia.org/${encodeURIComponent(emoji)})`,
+                ].join('\n'))
+                .setThumbnail(`https://em-content.zobj.net/thumbs/160/twitter/348/${joinedCodepoints}.png`)
+                .setColor(0x3498db);
 
-            console.log('Sending embed:', JSON.stringify(embed, null, 2));
-
-            await msg.channel.send({ embeds: [embed] });
-            return Promise.resolve();
-
+            return Promise.resolve({ embeds: [embed] });
+            
         } catch (error) {
             console.error('Error in emojipedia command:', error);
-            try {
-                await msg.channel.send({
-                    content: `Emoji: ${emoji}\nView designs: https://emojipedia.org/${encodeURIComponent(emoji)}`
-                });
-                return Promise.resolve();
-            } catch (fallbackError) {
-                console.error('Even simple fallback failed:', fallbackError);
-                return Promise.reject("Unable to send emoji information.");
-            }
+            return Promise.reject(`Unable to process emoji. Try: https://emojipedia.org/${encodeURIComponent(emoji)}`);
         }
     }
-}
+};

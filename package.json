@@ -21,7 +21,7 @@
         "@dmzoneill/urban-dictionary": "^3.0.3",
         "@twurple/api": "^7.2.1",
         "@twurple/auth": "^7.2.1",
-        "axios": "^1.12.0",
+        "axios": "^1.13.2",
         "booba": "^0.0.16",
         "bparser-js": "^1.0.2",
         "canvas": "^2.11.2",
