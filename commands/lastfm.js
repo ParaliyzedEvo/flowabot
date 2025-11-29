@@ -87,9 +87,11 @@ module.exports = {
                     let track_date;
                     if(track["@attr"] != undefined && track["@attr"].nowplaying == 'true')
                         track_date = "now playing";
+                    else if(track.date && track.date.uts)
+                        track_date = DateTime.fromSeconds(parseInt(track.date.uts)).toRelative();
                     else
-                        track_date = DateTime.fromSeconds(track.date.uts).toRelative();
-                    recent_tracks_string += `**${track.artist["#text"]}** – ${track.name} *(${track_date})*`;
+                        track_date = "unknown";
+                    recent_tracks_string += `**${track.artist["#text"]}** – ${track.name} *(${track_date})*`;
                 });
 
                 top_artists.artist.forEach((artist, index) => {
@@ -115,7 +117,7 @@ module.exports = {
                     description: periods[period].name,
                     footer: {
                         icon_url: "https://cdn.discordapp.com/attachments/532034792804581379/591679254656319556/lastfm-1.png",
-                        text: `Last.fm${helper.sep}Scrobbling since ${DateTime.fromSeconds(user.registered.unixtime).toFormat('dd MMMM yyyy')}`
+                        text: `Last.fm${helper.sep}Scrobbling since ${DateTime.fromSeconds(parseInt(user.registered.unixtime)).toFormat('dd MMMM yyyy')}`
                     },
                     thumbnail: {
                         url: user.image["2"]["#text"]
