@@ -1,5 +1,5 @@
 const osr = require('node-osr');
-const { PLAYFIELD_WIDTH, PLAYFIELD_HEIGHT, MathF, vectorDistance, radToDeg } = require('./util');
+const { PLAYFIELD_WIDTH, PLAYFIELD_HEIGHT, MathF, vectorDistance, radToDeg, clamp } = require('./util');
 
 const RPM_SPAN = 595; // time span for average rpm in ms
  
@@ -115,13 +115,29 @@ const parseReplay = async (buf, decompress = true) => {
 /*
 REPLAY SCORING
 */
+const DEFAULT_HP_INCREASE = 0.05;
+
+const HP_INCREASE = {
+    // gain
+    '300': DEFAULT_HP_INCREASE,
+    '100': DEFAULT_HP_INCREASE * 0.5,
+    '50': DEFAULT_HP_INCREASE * 0.05,
+    'largeTickHit': DEFAULT_HP_INCREASE,
+    'smallTickHit': DEFAULT_HP_INCREASE * 0.5,
+
+    // /_ loss
+    'smallTickMiss': -DEFAULT_HP_INCREASE * 0.5,
+    'largeTickMiss': -DEFAULT_HP_INCREASE,
+    'miss': -DEFAULT_HP_INCREASE * 2,
+}
+
 const newScoringFrame = scoringFrames => {
     let scoringFrame = {
         ur: 0, cvur: 0, offset: 0,
         count300: 0, count100: 0, count50: 0, countMiss: 0, 
         largeTickHits: 0, smallTickHits: 0, sliderEndHits: 0,
         largeTickMisses: 0, smallTickMisses: 0, sliderEndMisses: 0,
-        combo: 0, previousCombo: 0, maxCombo: 0, accuracy: 100, rotation: 0, rpm: 0
+        combo: 0, previousCombo: 0, maxCombo: 0, accuracy: 100, rotation: 0, rpm: 0, hp: 1, hpChange: 0
     };
 
     if(scoringFrames.length > 0)
@@ -425,6 +441,8 @@ class ReplayProcessor {
 					scoringFrame.combo = 0;
 				}
 
+				scoringFrame.hpChange = HP_INCREASE[scoringFrame.result];
+
 				if (hitObject.hitResult > 0) {
 					scoringFrame.hitOffset = hitObject.hitOffset;
 					scoringFrame.combo++;
@@ -476,7 +494,7 @@ class ReplayProcessor {
                     scoringFrame.offset = current.offset;
 
                     const angle = radToDeg(MathF.atan2(current.x - PLAYFIELD_WIDTH / 2, current.y - PLAYFIELD_HEIGHT / 2));
-                    let delta = prevAngle && current.holding ? angle - prevAngle : 0;
+                    let delta = prevAngle && current?.holding ? angle - prevAngle : 0;
 
                     if (delta > 180) delta -= 360;
                     if (delta < -180) delta += 360;
@@ -507,6 +525,7 @@ class ReplayProcessor {
 				const scoringFrame = newScoringFrame(ScoringFrames);
 
 				scoringFrame.result = 300;
+				scoringFrame.hpChange = HP_INCREASE[scoringFrame.result];
 				scoringFrame.combo++;
 
 				scoringFrame.count300++;
@@ -538,7 +557,7 @@ class ReplayProcessor {
 
 					if(hitObject.hitResult > 0){
 						scoringFrame.result = 30;
-						
+						scoringFrame.hpChange = HP_INCREASE['300'];
 						scoringFrame.combo++;
 
 						scoringFrame.hitOffset = hitObject.hitOffset;
@@ -552,6 +571,7 @@ class ReplayProcessor {
 					}else{
 						hitObject.MissedSliderStart = 1;
 						scoringFrame.result = 'sliderbreak';
+						scoringFrame.hpChange = HP_INCREASE['miss'];
 						
 						scoringFrame.combo = 0;
 					}
@@ -578,10 +598,11 @@ class ReplayProcessor {
 
 						const isLateStart = sliderHeadAccuracy && hitObject.hitOffset <= Beatmap.HitWindow50 && hitObject.hitOffset > repeatOffset;
 
-						if (isLateStart || replayFrame.holding && withinCircle(replayFrame.x, replayFrame.y, ...repeatPosition, Beatmap.ActualFollowpointRadius)) {
+						if (isLateStart || replayFrame?.holding && withinCircle(replayFrame.x, replayFrame.y, ...repeatPosition, Beatmap.ActualFollowpointRadius)) {
 							scoringFrame.result = 30;
 							scoringFrame.combo++;
 							scoringFrame.largeTickHits++;
+							scoringFrame.hpChange = HP_INCREASE['largeTickHit'];
 
 							if(scoringFrame.combo > scoringFrame.maxCombo)
 								scoringFrame.maxCombo = scoringFrame.combo;
@@ -595,6 +616,7 @@ class ReplayProcessor {
 								scoringFrame.result = 'large_tick_miss';
 								scoringFrame.largeTickMisses++;
 							}
+							scoringFrame.hpChange = HP_INCREASE['largeTickMiss'];
 							scoringFrame.combo = 0;
 							hitObject.MissedSliderTick = true;
 
@@ -617,10 +639,11 @@ class ReplayProcessor {
 
 						const isLateStart = sliderHeadAccuracy && hitObject.hitOffset <= Beatmap.HitWindow50 && hitObject.hitOffset > repeatOffset;
 
-						if (isLateStart || replayFrame.holding && withinCircle(replayFrame.x, replayFrame.y, ...tick.position, Beatmap.ActualFollowpointRadius)) {
+						if (isLateStart || replayFrame?.holding && withinCircle(replayFrame.x, replayFrame.y, ...tick.position, Beatmap.ActualFollowpointRadius)) {
 							scoringFrame.result = 10;
 							scoringFrame.combo++;
 							scoringFrame.largeTickHits++;
+							scoringFrame.hpChange = HP_INCREASE['largeTickHit'];
 
 							if(scoringFrame.combo > scoringFrame.maxCombo)
 								scoringFrame.maxCombo = scoringFrame.combo;
@@ -638,6 +661,7 @@ class ReplayProcessor {
 							scoringFrame.result = 'large_tick_miss';
 							scoringFrame.largeTickMisses++;
 						}
+						scoringFrame.hpChange = HP_INCREASE['largeTickMiss'];
 						scoringFrame.combo = 0;
 
 						ScoringFrames.push(scoringFrame);
@@ -652,7 +676,7 @@ class ReplayProcessor {
 						&& hitObject.hitOffset <= Beatmap.HitWindow50 
 						&& hitObject.hitOffset > (hitObject.actualEndTime - hitObject.startTime);
 
-						if (isLateStart || replayFrame.holding && withinCircle(replayFrame.x, replayFrame.y, ...endPosition, Beatmap.ActualFollowpointRadius)) {
+						if (isLateStart || replayFrame?.holding && withinCircle(replayFrame.x, replayFrame.y, ...endPosition, Beatmap.ActualFollowpointRadius)) {
 							const scoringFrame = newScoringFrame(ScoringFrames);
 							scoringFrame.offset = hitObject.endTime;
 							scoringFrame.position = endPosition;
@@ -694,10 +718,12 @@ class ReplayProcessor {
 								scoringFrameEnd.result = 'slider_end_miss';
 								scoringFrameEnd.smallTickMisses++;
 								scoringFrameEnd.sliderEndMisses++;
+								scoringFrameEnd.hpChange = HP_INCREASE['smallTickMiss'];
 							} else {
 								scoringFrameEnd.result = 30;
 								scoringFrameEnd.smallTickHits++;
 								scoringFrameEnd.sliderEndHits++;
+								scoringFrameEnd.hpChange = HP_INCREASE['smallTickHit'];
 							}
 							ScoringFrames.push(scoringFrameEnd);
 							continue;
@@ -735,6 +761,11 @@ class ReplayProcessor {
 		}
 
 		Beatmap.ScoringFrames = ScoringFrames.sort((a, b) => a.offset - b.offset);
+		let currentHp = 1;
+        for (const scoringFrame of Beatmap.ScoringFrames) {
+            currentHp = clamp(currentHp + (scoringFrame.hpChange ?? 0), 0, 1);
+            scoringFrame.hp = currentHp;
+        }
 	}
 
 	process () {

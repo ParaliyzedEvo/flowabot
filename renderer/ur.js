@@ -41,8 +41,8 @@ function calculateUr(options){
         }
         
         options.full = true;
-        const { ur, cvur } = await processBeatmap(path.resolve(config.osu_cache_path, `${options.beatmap_id}.osu`), options, options.mods_enabled, 0, 0, true);
-        resolve({ ur, cvur });
+        const { frames, ur, cvur } = await processBeatmap(path.resolve(config.osu_cache_path, `${options.beatmap_id}.osu`), options, options.mods_enabled, 0, 0, true);
+        resolve({ frames, ur, cvur });
     });
 }
 

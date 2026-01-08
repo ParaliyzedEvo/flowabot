@@ -356,7 +356,7 @@ async function downloadMedia(options, beatmap, beatmap_path, size, download_path
 
 	let beatmapset_id = beatmap.BeatmapSetID;
 
-	if(beatmapset_id == null){
+	if(beatmapset_id == null || beatmapset_id < 0){
 		const content = await fs.promises.readFile(beatmap_path, 'utf8');
 		const hash = crypto.createHash('md5').update(content).digest("hex");
 
