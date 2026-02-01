@@ -1,8 +1,8 @@
-FROM node:22-bullseye
+FROM node:22-bullseye AS builder
 
-WORKDIR /app
+WORKDIR /build
 
-# Install system dependencies
+# System deps
 RUN apt-get update && apt-get install -y \
     git \
     wget \
@@ -12,70 +12,88 @@ RUN apt-get update && apt-get install -y \
     libjpeg-dev \
     libgif-dev \
     librsvg2-dev \
-    ffmpeg \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install .NET 8.0
+# Install .NET SDK
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh \
     && chmod +x dotnet-install.sh \
     && ./dotnet-install.sh --channel 8.0 \
     && rm dotnet-install.sh
 
-# Add .NET to PATH
 ENV PATH="/root/.dotnet:${PATH}"
 ENV DOTNET_ROOT="/root/.dotnet"
 
-# Install libssl1.1 and libssl-dev (required for some dependencies)
+# libssl for building
 RUN cd /tmp \
     && wget http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb \
     && wget http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl-dev_1.1.1f-1ubuntu2.24_amd64.deb \
     && dpkg -i libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb libssl-dev_1.1.1f-1ubuntu2.24_amd64.deb || true \
     && apt-get install -f -y \
-    && rm libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb libssl-dev_1.1.1f-1ubuntu2.24_amd64.deb
+    && rm *.deb
 
-# Install osu-tools (PP calculator)
-RUN cd /root \
-    && git clone --recurse-submodules https://github.com/ppy/osu-tools \
-    && cd osu-tools \
+# Node deps
+COPY package*.json ./
+RUN npm install && npm install -g node-gyp
+
+# osu-tools
+RUN git clone --recurse-submodules https://github.com/ppy/osu-tools /build/osu-tools \
+    && cd /build/osu-tools \
     && dotnet build
 
-# Install new oppai
-RUN cd /tmp \
-    && wget https://github.com/Francesco149/oppai-ng/archive/HEAD.tar.gz \
+# oppai-ng
+RUN wget https://github.com/Francesco149/oppai-ng/archive/HEAD.tar.gz \
     && tar xf HEAD.tar.gz \
-    && rm HEAD.tar.gz \
     && cd oppai-ng-* \
     && ./build \
-    && install -Dm 755 oppai /usr/bin/oppai \
-    && cd /tmp \
-    && rm -rf oppai-ng-*
+    && install -Dm 755 oppai /usr/bin/oppai
 
-# Install old oppai
-RUN cd /tmp \
-    && git clone https://github.com/Francesco149/oppai.git \
+# old oppai
+RUN git clone https://github.com/Francesco149/oppai.git \
     && cd oppai \
     && ./build.sh \
-    && mv oppai oppaiold \
-    && install -Dm 755 oppaiold /usr/bin/oppaiold \
-    && cd /tmp \
-    && rm -rf oppai
+    && install -Dm 755 oppai /usr/bin/oppaiold
 
-# Copy package files
-COPY package*.json ./
+FROM node:22-slim
 
-# Install Node.js dependencies
-RUN npm install
+WORKDIR /app
 
-# Install node-gyp globally
-RUN npm install -g node-gyp
+# Runtime-only system deps
+RUN apt-get update && apt-get install -y \
+    libcairo2 \
+    libpango-1.0-0 \
+    libjpeg62-turbo \
+    libgif7 \
+    librsvg2-2 \
+    ffmpeg \
+    curl \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copy application code
+# libssl1.1 runtime
+RUN cd /tmp \
+    && wget http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb \
+    && dpkg -i libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb || apt-get -f install -y \
+    && rm libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb
+
+# .NET runtime ONLY
+RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh \
+    && chmod +x dotnet-install.sh \
+    && ./dotnet-install.sh --runtime dotnet --channel 8.0 \
+    && rm dotnet-install.sh
+
+ENV PATH="/root/.dotnet:${PATH}"
+ENV DOTNET_ROOT="/root/.dotnet"
+
+# Copy built artifacts
+COPY --from=builder /usr/bin/oppai /usr/bin/oppai
+COPY --from=builder /usr/bin/oppaiold /usr/bin/oppaiold
+COPY --from=builder /build/osu-tools /opt/osu-tools
+COPY --from=builder /build/node_modules ./node_modules
+
+# App code
 COPY . .
-
-# Copy and make start script executable
 COPY start.sh .
 RUN chmod +x start.sh
 
-# Run the start script
 CMD ["./start.sh"]

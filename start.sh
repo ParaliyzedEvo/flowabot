@@ -10,7 +10,7 @@ cat > config.json << EOF
   "oppai_path": "$(which oppai)",
   "oppai_old_path": "$(which oppaiold)",
   "ffmpeg_path": "$(which ffmpeg)",
-  "pp_path": "/root/osu-tools/PerformanceCalculator/bin/Debug/net8.0/PerformanceCalculator.dll",
+  "pp_path": "/opt/osu-tools/PerformanceCalculator/bin/Debug/net8.0/PerformanceCalculator.dll",
   "beatmap_api": "https://osu.lea.moe",
   "credentials": {
     "bot_token": "${DISCORD_TOKEN}",
@@ -35,6 +35,6 @@ echo "ffmpeg: $(which ffmpeg)"
 echo "oppai: $(which oppai)"
 echo "oppaiold: $(which oppaiold)"
 echo "dotnet: $(which dotnet)"
-ls -la /root/osu-tools/PerformanceCalculator/bin/Debug/net8.0/ || echo "Warning: PP calculator path check failed"
+ls -la /opt/osu-tools/PerformanceCalculator/bin/Debug/net8.0/ || echo "Warning: PP calculator path check failed"
 echo "Starting Flowabot..."
 exec node checkAndRefreshToken.js
