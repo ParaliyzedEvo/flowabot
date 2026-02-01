@@ -91,13 +91,26 @@
 	
     config.maps_path = value;
 	
-	default_value = path.resolve('/usr', 'bin', 'oppai');;
+	default_value = 'none';
 	
     if(config.oppai_path)
         default_value = config.oppai_path;
 	
     console.log('');
     value = readline.question(`Path to oppai [${chalk.green(default_value)}]: `);
+	
+    if(!value)
+        value = default_value;
+	
+    config.oppai_path = value;
+
+    default_value = 'none';
+	
+    if(config.oppai_old_path)
+        default_value = config.oppai_old_path;
+	
+    console.log('');
+    value = readline.question(`Path to oppaiold [${chalk.green(default_value)}]: `);
 	
     if(!value)
         value = default_value;

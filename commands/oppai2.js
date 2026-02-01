@@ -23,7 +23,7 @@ module.exports = {
     argsRequired: 1,
     usage: '<map link> [+HDDT] [99.23%] [2x100] [1x50] [3m] [342x]',
     example: {
-        run: "oppai https://osu.ppy.sh/b/75 +DT ",
+        run: "oppai2 https://osu.ppy.sh/b/75 +DT ",
         result: "Calculates pp on this beatmap with DT applied."
     },
     configRequired: ['debug', 'osu_cache_path'],
@@ -57,7 +57,7 @@ module.exports = {
 
                     let beatmap_path = download_path ? download_path : path.resolve(config.osu_cache_path, `${beatmap_id}.osu`);
 
-                    const oppaiPath = path.join('/usr', 'bin', 'oppaiold');
+                    const oppaiPath = config.oppai_old_path;
                     const oppaiArgs = [beatmap_path, ...argv.slice(2)];
 
                     execFile(oppaiPath, oppaiArgs, (err, stdout, stderr) => {
