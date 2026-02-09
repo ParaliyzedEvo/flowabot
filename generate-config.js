@@ -8,7 +8,7 @@
 	    const { execFile } = require('child_process');
 	    const execPromiseFile = util.promisify(execFile);
 
-    const Discord = require('discord.js');
+    const { Client, GatewayIntentBits } = require('discord.js');
     const axios = require('axios');
 
     let config = {}, default_value, value, valid_key;
@@ -115,7 +115,7 @@
     if(!value)
         value = default_value;
 	
-    config.oppai_path = value;
+    config.oppai_old_path = value;
 	
 	
 	default_value = 'none';
@@ -181,7 +181,13 @@
         if(!value)
             value = default_value;
 
-        let client = new Discord.Client();
+        const client = new Client({
+            intents: [
+                GatewayIntentBits.Guilds,
+                GatewayIntentBits.GuildMessages,
+                GatewayIntentBits.MessageContent
+            ]
+        });
 
         valid_key = true;
 
