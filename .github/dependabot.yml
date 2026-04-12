@@ -1,0 +1,24 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "daily"
+    ignore:
+      - dependency-name: "tar"
+      - dependency-name: "mathjs"
+      - dependency-name: "chart.js"
+      - dependency-name: "canvas"
+      - dependency-name: "lzma-native"
+      - dependency-name: "node-osr"
+      - dependency-name: "osu-parser"
+      - dependency-name: "vm2"
+    groups:
+      twurple:
+        patterns: ["@twurple/*"]
+      rendering:
+        patterns: ["jimp", "chartjs-node-canvas"]
+      discord:
+        patterns: ["discord.js"]
+      devDependencies:
+        dependency-type: "development"
