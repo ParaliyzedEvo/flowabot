@@ -49,7 +49,7 @@
         "readline-sync": "^1.4.10",
         "rosu-pp-js": "^4.0.0",
         "semver": "^7.7.3",
-        "table": "^6.7.5",
+        "table": "^6.9.0",
         "tcp-ping": "^0.1.1",
         "tz-lookup": "^6.1.25",
         "unzipper": "^0.10.11"
