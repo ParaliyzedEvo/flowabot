@@ -40,7 +40,7 @@
         "mysql": "^2.18.1",
         "node-emoji": "^1.10.0",
         "node-fetch": "^2.6.6",
-        "node-localstorage": "^2.1.6",
+        "node-localstorage": "^3.0.5",
         "node-osr": "github:LeaPhant/node-osr",
         "object-path": "^0.11.5",
         "ojsama": "^2.2.0",
