@@ -27,7 +27,7 @@ module.exports = {
                             name: results[0].word,
                             url: results[0].permalink
                         },
-                        fields: {name: 'Example', value: example.replace(/\[|\]/g, '')},
+                        fields: [{name: 'Example', value: example.replace(/\[|\]/g, '')}],
                         timestamp: new Date(results[0].written_on),
                         footer: {text: 'by ' + results[0].author}
                     }]
