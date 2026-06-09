@@ -68,7 +68,7 @@ module.exports = {
                     name, value
                 });
             }
-            resolve(embed);
+            resolve({ embeds: [embed] });
         });
     }
 };
