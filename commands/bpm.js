@@ -23,65 +23,53 @@ module.exports = {
     ],
     configRequired: ['debug'],
     call: obj => {
-        return new Promise((resolve, reject) => {
+        return new Promise(async (resolve, reject) => {
             let { argv, msg, last_beatmap } = obj;
+            let beatmap_id, download_promise, beatmap_url, mods = "", custom_url = false;
 
-            let beatmap_id, beatmap_promise, download_promise, beatmap_url, mods = "", custom_url = false;
-
-            argv.slice(1).forEach(arg => {
+            for (const arg of argv.slice(1)) {
                 if(arg.startsWith('+'))
                     mods = arg.toUpperCase().substr(1);
-                else{
+                else {
                     beatmap_url = arg;
-                    beatmap_promise = osu.parse_beatmap_url(beatmap_url);
-                    beatmap_promise.then(response => {
-                        beatmap_id = response;
-                        if(!beatmap_id) custom_url = true;
-                    });
+                    beatmap_id = await osu.parse_beatmap_url(beatmap_url);
+                    if(!beatmap_id) custom_url = true;
                 }
-            });
+            }
 
-            Promise.resolve(beatmap_promise).then(() => {
-                if(!(msg.channel.id in last_beatmap)){
-                    msg.channel.send(helper.commandHelp('bpm'));
-                    return;
-                }else if(!beatmap_id && !custom_url){
-                    beatmap_id = last_beatmap[msg.channel.id].beatmap_id;
-                    download_promise = helper.downloadBeatmap(beatmap_id).catch(helper.error);
+            if(!(msg.channel.id in last_beatmap) && !beatmap_id && !custom_url){
+                return reject(helper.commandHelp('bpm'));
+            }
 
-                    mods = Array.isArray(last_beatmap[msg.channel.id].mods) 
+            if(!beatmap_id && !custom_url){
+                beatmap_id = last_beatmap[msg.channel.id].beatmap_id;
+                download_promise = helper.downloadBeatmap(beatmap_id).catch(helper.error);
+                mods = Array.isArray(last_beatmap[msg.channel.id].mods) 
                     ? last_beatmap[msg.channel.id].mods.map(mod => mod.acronym).join('') : '';
+            }
+
+            let download_path = path.resolve(config.osu_cache_path, `${beatmap_id}.osu`);
+
+            if(!beatmap_id){
+                let download_url = URL.parse(beatmap_url);
+                download_path = path.resolve(os.tmpdir(), `${Math.floor(Math.random() * 1000000) + 1}.osu`);
+                download_promise = helper.downloadFile(download_path, download_url);
+                download_promise.catch(reject);
+            }
+
+            await Promise.resolve(download_promise);
+
+            osu.get_bpm_graph(download_path, mods).then(res => {
+                if(beatmap_id){
+                    helper.updateLastBeatmap({
+                        beatmap_id,
+                        mods,
+                        fail_percent: last_beatmap[msg.channel.id]?.fail_percent ?? 1,
+                        acc: last_beatmap[msg.channel.id]?.acc ?? 100
+                    }, msg.channel.id, last_beatmap);
                 }
-
-                let download_path = path.resolve(config.osu_cache_path, `${beatmap_id}.osu`);
-
-                if(!beatmap_id){
-                    let download_url = URL.parse(beatmap_url);
-                    download_path = path.resolve(os.tmpdir(), `${Math.floor(Math.random() * 1000000) + 1}.osu`);
-
-                    download_promise = helper.downloadFile(download_path, download_url);
-
-                    download_promise.catch(reject);
-                }
-
-                Promise.resolve(download_promise).then(() => {
-                    osu.get_bpm_graph(download_path, mods).then(res => {
-                        if(beatmap_id){
-                            helper.updateLastBeatmap({
-                                beatmap_id,
-                                mods,
-                                fail_percent: last_beatmap[msg.channel.id].fail_percent || 1,
-                                acc: last_beatmap[msg.channel.id].acc || 100
-                            }, msg.channel.id, last_beatmap);
-                        }
-
-                        resolve({files: [{ attachment: Buffer.from(res, 'base64'), name: 'bpm.png' }]});
-                    }).catch(err => {
-                        reject(err);
-                        return false;
-                    })
-                });
-            });
+                resolve({files: [{ attachment: Buffer.from(res, 'base64'), name: 'bpm.png' }]});
+            }).catch(reject);
         });
     }
 };
