@@ -52,7 +52,7 @@
         "table": "^6.9.0",
         "tcp-ping": "^0.1.1",
         "tz-lookup": "^6.1.25",
-        "unzipper": "^0.10.11"
+        "unzipper": "^0.12.3"
     },
     "devDependencies": {
         "finalhandler": "^2.1.1",
