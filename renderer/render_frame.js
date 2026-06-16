@@ -8,7 +8,6 @@ const Jimp = require('jimp');
 const crypto = require('crypto');
 
 const unzip = require('unzipper');
-const disk = require('diskusage');
 
 const { exec, execFile, fork, spawn } = require('child_process');
 
@@ -16,7 +15,11 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 const execPromise = util.promisify(exec);
 const execFilePromise = util.promisify(execFile);
-const diskCheck = util.promisify(disk.check);
+const diskCheck = util.promisify(fs.statfs);
+const freeSpace = async filePath => { 
+    const stat = await diskCheck(filePath);
+    return stat.bsize * stat.bfree 
+};
 
 const processBeatmap = require('./beatmap/process.js');
 
@@ -31,9 +34,9 @@ let enabled_mods = [""];
 
 const resources = path.resolve(__dirname, "res");
 
-const BEATMAP_MIRRORS = config.beatmap_mirrors ?? [
-    "https://mirror.nekoha.moe/api4/download/$SETID"
-];
+const BEATMAP_MIRRORS = process.env.BEATMAP_MIRRORS ? process.env.BEATMAP_MIRRORS.split(',') : (config.beatmap_mirrors ?? [
+    "https://mirror.nekoha.moe/api4/download/{SETID}"
+]);
 
 async function copyDir(src,dest) {
     const entries = await fs.promises.readdir(src, {withFileTypes: true});
@@ -353,7 +356,7 @@ async function renderHitsounds(mediaPromise, beatmap, start_time, actual_length,
 }
 
 async function downloadMedia(options, beatmap, beatmap_path, size, download_path){
-	if(options.type != 'mp4' || options.custom_url || !options.audio || !config.credentials.osu_api_key)
+	if(options.type != 'mp4' || options.custom_url || !options.audio || !(process.env.OSU_API_KEY ?? config.credentials.osu_api_key))
 		throw 'No mapset available';
 
 	let output = {};
@@ -365,7 +368,7 @@ async function downloadMedia(options, beatmap, beatmap_path, size, download_path
 		const hash = crypto.createHash('md5').update(content).digest("hex");
 
 		const { data } = await axios.get('https://osu.ppy.sh/api/get_beatmaps', { params: {
-			k: config.credentials.osu_api_key,
+			k: process.env.OSU_API_KEY ?? config.credentials.osu_api_key,
 			h: hash
 		}});
 
@@ -394,17 +397,23 @@ async function downloadMedia(options, beatmap, beatmap_path, size, download_path
 	let mapOsz;
 
 	for (const mirror of BEATMAP_MIRRORS) {
-        try {
-            const oszResponse = await axios.get(
-                mirror.replaceAll('$SETID', beatmapset_id), 
-                { timeout: 10000, responseType: 'arraybuffer' }
-            );
-            mapOsz = oszResponse.data;
-            break;
-        } catch(e) {
-            continue;
-        }
-    }
+		const mirrorUrl = mirror.replace(/\$SETID|\{SETID\}/g, beatmapset_id);
+		try {
+			const oszResponse = await axios.get(mirrorUrl, {
+				timeout: 10000,
+				responseType: "arraybuffer",
+				headers: {
+					"User-Agent": "flowabot (https://github.com/ParaliyzedEvo/flowabot)",
+				},
+			});
+			mapOsz = oszResponse.data;
+			break;
+		} catch (e) {
+			let errorString = Buffer.from(e.response.data).toString("utf-8");
+			console.error(mirrorUrl, e.response.status, errorString);
+			continue;
+		}
+	}
 
 	const extraction_path = path.resolve(download_path, 'map');
 
@@ -727,9 +736,7 @@ module.exports = {
 			}
 		}
 
-		const info = await diskCheck(file_path);
-
-		if(info.available * 0.9 < frames_size){
+		if(await freeSpace(file_path) * 0.9 < frames_size){
 			resolveRender("Not enough disk space").catch(console.error);
 
 			return false;
@@ -757,11 +764,11 @@ module.exports = {
 
 		let done = 0;
 
-		if(config.debug)
+		if(helper.debug)
 			console.time('render beatmap');
 
 		if(options.type == 'gif'){
-			if(config.debug)
+			if(helper.debug)
 				console.time('encode video');
 
 			ffmpeg_args.push(`${file_path}/video.gif`);
@@ -780,7 +787,7 @@ module.exports = {
 					return false;
 				}
 
-				if(config.debug)
+				if(helper.debug)
 					console.timeEnd('encode video');
 
 				renderStatus[3] = `✓ encoding video (${((Date.now() - encodingProcessStart) / 1000).toFixed(3)}s)`;
@@ -825,7 +832,7 @@ module.exports = {
 				ffmpeg_args.unshift('-f', 'lavfi', '-r', fps, '-i', `color=c=black:s=${size.join("x")}`);
 				helper.log("rendering without audio");
 			}).finally(() => {
-				if(config.debug)
+				if(helper.debug)
 					console.time('encode video');
 
 				ffmpeg_args.push(
@@ -851,7 +858,7 @@ module.exports = {
 						return false;
 					}
 
-					if(config.debug)
+					if(helper.debug)
 						console.timeEnd('encode video');
 
 					renderStatus[3] = `✓ encoding video (${((Date.now() - encodingProcessStart) / 1000).toFixed(3)}s)`;
@@ -873,7 +880,7 @@ module.exports = {
 							fs.promises.rm(file_path, { recursive: true }).catch(helper.error);
 						});
 					}else{
-						if (!config.upload_command) {
+						if (!config.upload_command && !config.upload_script) {
 							resolveRender("File too large and no upload command specified.").finally(() => {
 								fs.promises.rm(file_path, { recursive: true }).catch(helper.error);
 							});
@@ -881,17 +888,26 @@ module.exports = {
 						}
 
 						try{
-							const upload_command = config.upload_command.replace('{path}', `${file_path}/video.${options.type}`);
+                            const upload_script = await helper.fileExists(config.upload_script) ? config.upload_script : undefined;
+                            let response;
 
-							if (config.debug)
-								console.log('running upload command: ', config.upload_command);
+                            if (upload_script) {
+                                response = await execFilePromise(upload_script, [`${file_path}/video.${options.type}`]);
+                                const url = new URL(response.stdout);
+                            } else {
+                                const upload_command = config.upload_command.replace('{path}', `${file_path}/video.${options.type}`);
 
-							const response = await execPromise(upload_command);
-							const url = new URL(response.stdout);
+                                if (helper.debug)
+                                    console.log('running upload command: ', config.upload_command);
 
-							await resolveRender(url.href);
+                                response = await execPromise(upload_command);
+                            }
+                            
+                            const url = new URL(response.stdout);
+                            
+                            await resolveRender(url.href);
 						}catch(err){
-							await resolveRender("File too large and failed to upload to specified upload command.")
+							await resolveRender("File too large and failed to upload to specified upload command/script.")
 							console.error(err);
 						}finally{
 							fs.promises.rm(file_path, { recursive: true }).catch(helper.error);
@@ -955,7 +971,7 @@ module.exports = {
 				if(done == threads){
 					renderStatus[2] = `✓ rendering frames (${((Date.now() - framesProcessStart) / 1000).toFixed(3)}s)`;
 
-					if(config.debug)
+					if(helper.debug)
 						console.timeEnd('render beatmap');
 				}
 			});

@@ -16,6 +16,8 @@ module.exports = {
     description: "Shows what song you are currently listening to. If it can't be retrieved from Rich Presence it will ask for a Last.fm username.",
     usage: '[last.fm username]',
     configRequired: ['credentials.last_fm_key'],
+    envRequired: ['LAST_FM_KEY'],
+    intentRequired: ['GuildPresences'],
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg } = obj;
@@ -156,10 +158,65 @@ module.exports = {
 
             if(embed){
                 resolve({embeds: [embed]});
-            } else {
-                // No presence found and no username provided
-                reject('Currently not sharing any listening status. Please specify a Last.fm username.');
+                return true;
             }
+
+            if(argv.length < 2){
+                reject('Currently not sharing any listening status. Please specify a Last.fm username.')
+                return false;
+            }
+
+            lastFm.defaults.params.api_key = process.env.LAST_FM_KEY ?? config.credentials.last_fm_key;
+
+            let requests = [
+                lastFm.get('', { params: { method: 'user.getinfo', user: argv[1] }}),
+                lastFm.get('', { params: { method: 'user.getrecenttracks',  user: argv[1], limit: 1 }})
+            ];
+
+            Promise.all(requests).then(response => {
+                let user = response[0].data.user;
+                let recent_tracks = response[1].data.recenttracks;
+                if(recent_tracks.track.length == 0){
+                    reject(`This user hasn't listened to anything yet`);
+                }else{
+                    let listening_text = "";
+                    let track = recent_tracks.track[0];
+
+                    if(track["@attr"] != undefined && track["@attr"].nowplaying == 'true'){
+                        listening_text = 'Listening right now';
+                    }else{
+                        listening_text = `Listened ${DateTime.fromSeconds(track.date.uts).toRelative()}`;
+                    }
+
+                    embed = {
+                        color: 13959168,
+                        footer: {
+                            icon_url: "https://cdn.discordapp.com/attachments/532034792804581379/591679254656319556/lastfm-1.png",
+                            text: `Last.fm${helper.sep}${listening_text}`
+                        },
+                        thumbnail: {
+                            url: track.image[2]["#text"]
+                        },
+                        title: `**${track.artist["#text"]}** – ${track.name}`,
+                        url: track.url,
+                        author: {
+                            name: user.name,
+                            url: user.url,
+                            icon_url: user.image["0"]["#text"]
+                        }
+                    };
+                    
+                    if(track.album["#text"].length > 0)
+                        embed.description = `⠀\nAlbum: **${track.album["#text"]}**`
+
+                    resolve({ embeds: [embed] });
+                }
+            }).catch(err => {
+                if(helper.debug)
+                    helper.error(err);
+
+                reject('User not found');
+            });
         });
     }
 };

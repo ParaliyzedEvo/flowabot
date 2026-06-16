@@ -65,4 +65,4 @@ client.on('clientReady', () => {
     });
 });
 
-client.login(config.credentials.bot_token);
+client.login(process.env.DISCORD_BOT_TOKEN ?? config.credentials.bot_token);

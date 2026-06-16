@@ -1,6 +1,4 @@
 const LocalStorage = require('node-localstorage').LocalStorage;
-localStorage = new LocalStorage('./scratch');
-
 const { DateTime } = require('luxon');
 const fs = require('fs');
 const path = require('path');
@@ -10,6 +8,10 @@ const axios = require('axios');
 const fileExists = async path => !!(await fs.promises.stat(path).catch(e => false));
 
 const config = require('./config.json');
+const PREFIX = process.env.BOT_PREFIX ?? config.prefix;
+const DEBUG = process.env.DEBUG ? ['1', 'true'].includes(process.env.DEBUG) : config.debug;
+
+localStorage = new LocalStorage(config.storage_path ?? './scratch');
 
 const sep = '  ✦  ';
 const cmd_escape = "```";
@@ -17,6 +19,8 @@ const cmd_escape = "```";
 let commands;
 
 module.exports = {
+    prefix: PREFIX,
+    debug: DEBUG,
     fileExists,
 
     init: _commands => {
@@ -68,7 +72,7 @@ module.exports = {
                     if(index > 0)
                         commands_value += ", ";
 
-                    commands_value += `\`${config.prefix}${_command}\``;
+                    commands_value += `\`${PREFIX}${_command}\``;
                 });
 
                 embed.fields.push({
@@ -89,7 +93,7 @@ module.exports = {
                 if(command.usage){
                     embed.fields.push({
                         name: "Usage",
-                        value: `${cmd_escape}${config.prefix}${command.command[0]} ${command.usage}${cmd_escape}\n`
+                        value: `${cmd_escape}${PREFIX}${command.command[0]} ${command.usage}${cmd_escape}\n`
                     });
                 }
 
@@ -109,12 +113,12 @@ module.exports = {
                             examples_value += "\n\n";
                 
                         if (typeof example === 'object') {
-                            examples_value += `${cmd_escape}${config.prefix}${example.run}${cmd_escape}`;
+                            examples_value += `${cmd_escape}${PREFIX}${example.run}${cmd_escape}`;
                             if (example.example || example.result) {
                                 examples_value += `\n${example.example || example.result}`;
                             }
                         } else {
-                            examples_value += `${cmd_escape}${config.prefix}${example}${cmd_escape}`;
+                            examples_value += `${cmd_escape}${PREFIX}${example}${cmd_escape}`;
                         }
                     });
                 
@@ -194,8 +198,8 @@ module.exports = {
     },
 
     downloadBeatmapByMd5: async function(beatmap_md5) {
-        const beatmap = await axios.get('https://osu.ppy.sh/api/get_beatmaps', { params: { k: config.credentials?.osu_api_key, h: beatmap_md5 }});
-        
+        const beatmap = await axios.get('https://osu.ppy.sh/api/get_beatmaps', { params: { k: process.env.OSU_API_KEY ?? config.credentials?.osu_api_key, h: beatmap_md5 }});
+
         if (!beatmap.data || beatmap.data.length < 1) return;
 
         const { beatmap_id } = beatmap.data[0];
@@ -290,7 +294,7 @@ module.exports = {
                 return_username = user_ign[message.author.id];
         }
 
-        if(config.debug)
+        if(DEBUG)
             module.exports.log('returning data for username', return_username);
 
         return return_username;

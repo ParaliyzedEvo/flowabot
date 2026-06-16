@@ -1,13 +1,16 @@
 const axios = require('axios');
 const config = require('../config.json');
 
-const twitchHelix = axios.create({
-    baseURL: 'https://api.twitch.tv/helix',
-    headers: {
-        'Authorization': `Bearer ${config.credentials.twitch_token}`,
-        'Client-ID': config.credentials.twitch_client_id
-    }
-});
+const { Duration } = require('luxon');
+const { AppTokenAuthProvider } = require('@twurple/auth');
+const { ApiClient } = require('@twurple/api');
+
+const authProvider = new AppTokenAuthProvider(
+	process.env.TWITCH_CLIENT_ID ?? config.credentials.twitch_client_id, 
+	process.env.TWITCH_CLIENT_SECRET ?? config.credentials.twitch_client_secret
+);
+
+const apiClient = new ApiClient({ authProvider });
 
 module.exports = {
     command: 'viewers',
@@ -18,11 +21,12 @@ module.exports = {
         run: "viewers distortion2",
         result: "Returns how many viewers distortion2 currently has (if they're live)."
     },
-    configRequired: ['credentials.twitch_client_id', 'credentials.twitch_token'],
-    call: obj => {
-        return new Promise((resolve, reject) => {
-            let { argv } = obj;
-            let channel_name = argv[1];
+    configRequired: ['credentials.twitch_client_id', 'credentials.twitch_client_secret'],
+    envRequired: ['TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET'],
+    call: async obj => {
+		let { argv } = obj;
+
+		let channel_name = argv[1];
 
             twitchHelix.get(`/streams`, {
                 params: { user_login: channel_name }

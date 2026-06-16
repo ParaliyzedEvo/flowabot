@@ -425,6 +425,7 @@ Beatmap.options = options;
 
         await this.applySettings();
         await this.applyMods(ApplicableMods.ReflectionMod);
+        await this.applySliders();
         await this.applyMods(ApplicableMods.RandomMod);
 		await this.applyStacking();
         await this.applyReplay();

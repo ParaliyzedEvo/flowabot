@@ -19,10 +19,18 @@
     "license": "MIT",
     "dependencies": {
         "@dmzoneill/urban-dictionary": "^3.0.3",
+<<<<<<< HEAD
         "@twurple/api": "^8.1.4",
         "@twurple/auth": "^8.1.4",
         "axios": "^1.18.0",
         "booba": "^0.0.19",
+=======
+        "@napi-rs/canvas": "^1.0.0",
+        "@twurple/api": "^7.2.1",
+        "@twurple/auth": "^7.2.1",
+        "axios": "^0.32.0",
+        "booba": "^0.0.16",
+>>>>>>> 2868eb3 (Bump axios from 0.21.4 to 0.32.0)
         "bparser-js": "^1.0.2",
         "canvas": "^2.11.2",
         "chalk": "^4.1.0",
