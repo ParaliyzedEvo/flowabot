@@ -1,4 +1,4 @@
-FROM node:22-bullseye AS builder
+FROM node:26.3.0-bullseye AS builder
 
 WORKDIR /build
 
@@ -24,14 +24,6 @@ RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh \
 ENV PATH="/root/.dotnet:${PATH}"
 ENV DOTNET_ROOT="/root/.dotnet"
 
-# libssl for building
-RUN cd /tmp \
-    && wget http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb \
-    && wget http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl-dev_1.1.1f-1ubuntu2.24_amd64.deb \
-    && dpkg -i libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb libssl-dev_1.1.1f-1ubuntu2.24_amd64.deb || true \
-    && apt-get install -f -y \
-    && rm *.deb
-
 # Node deps
 COPY package*.json ./
 RUN npm install && npm install -g node-gyp
@@ -54,7 +46,7 @@ RUN git clone https://github.com/Francesco149/oppai.git \
     && ./build.sh \
     && install -Dm 755 oppai /usr/bin/oppaiold
 
-FROM node:22-slim
+FROM node:26.3.0-slim
 
 WORKDIR /app
 
@@ -69,12 +61,6 @@ RUN apt-get update && apt-get install -y \
     curl \
     wget \
     && rm -rf /var/lib/apt/lists/*
-
-# libssl1.1 runtime
-RUN cd /tmp \
-    && wget http://security.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb \
-    && dpkg -i libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb || apt-get -f install -y \
-    && rm libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb
 
 # .NET runtime ONLY
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh \

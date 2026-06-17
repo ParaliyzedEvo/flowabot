@@ -4,9 +4,11 @@ cat > config.json << EOF
 {
   "prefix": "!!",
   "debug": true,
+  "process_beatmap_sync": true,
   "osu_cache_path": "/tmp/osumaps",
   "replay_path": "/tmp/osureplays",
   "maps_path": "/tmp/osumapsets",
+  "storage_path": "/data/store",
   "oppai_path": "$(which oppai)",
   "oppai_old_path": "$(which oppaiold)",
   "ffmpeg_path": "$(which ffmpeg)",
