@@ -1,5 +1,5 @@
 module.exports = {
-    command: 'w;',
+    command: 'w',
     call: () => {
         return ";w;";
     }

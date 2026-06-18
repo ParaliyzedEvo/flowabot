@@ -1,7 +1,7 @@
 var tcpp = require('tcp-ping');
 
 module.exports = {
-    command: 'ping2',
+    command: 'ping3',
     description: "ping a website.",
     argsRequired: 1,
     usage: '<url>',

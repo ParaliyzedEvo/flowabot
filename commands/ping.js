@@ -1,5 +1,5 @@
 module.exports = {
-    command: 'ping',
+    command: 'ping2',
     call: () => {
         return "Pong!";
     }
