@@ -689,8 +689,6 @@ class ReplayProcessor {
 
                         tracker.until(repeatOffset, offset, i % 2);
 
-						const currentHolding = replayFrame.K1 || replayFrame.K2 || replayFrame.M1 || replayFrame.M2;
-
 						const isLateStart = sliderHeadAccuracy && hitObject.hitOffset <= Beatmap.HitWindow50 && hitObject.hitOffset > repeatOffset;
 
 						if (isLateStart || tracker.frame.holding && withinCircle(tracker.frame.x, tracker.frame.y, ...tick.position, Beatmap.ActualFollowpointRadius) && !tracker.exitedFollowRadius) {
