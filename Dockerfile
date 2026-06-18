@@ -62,6 +62,12 @@ RUN apt-get update && apt-get install -y \
     wget \
     && rm -rf /var/lib/apt/lists/*
 
+# Add legacy OpenSSL 1.1 for oppaiold
+RUN echo "deb http://archive.debian.org/debian bullseye-security main" >> /etc/apt/sources.list \
+    && apt-get update \
+    && apt-get install -y libssl1.1 \
+    && rm -rf /var/lib/apt/lists/*
+
 # .NET runtime ONLY
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh \
     && chmod +x dotnet-install.sh \
