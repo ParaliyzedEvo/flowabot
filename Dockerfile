@@ -63,7 +63,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # Add legacy OpenSSL 1.1 for oppaiold
-RUN echo "deb http://archive.debian.org/debian bullseye-security main" >> /etc/apt/sources.list \
+RUN echo "deb http://archive.debian.org/debian bullseye main" >> /etc/apt/sources.list \
     && apt-get update \
     && apt-get install -y libssl1.1 \
     && rm -rf /var/lib/apt/lists/*
