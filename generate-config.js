@@ -350,6 +350,20 @@ do {
 
 config.upload_command = value === 'none' ? "" : value;
 
+default_value = 'none';
+
+if(config.blacklist && config.blacklist.length > 0)
+    default_value = config.blacklist.join(',');
+
+console.log('');
+console.log(`(Optional) Comma separated list of Discord server IDs to blacklist the bot from operating in.`);
+value = readline.question(`Blacklisted server IDs [${chalk.green(default_value)}]: `);
+
+if(!value)
+    value = default_value;
+
+config.blacklist = value == 'none' ? [] : value.split(',').map(id => id.trim()).filter(Boolean);
+
 let valid_client_id = false;
 let valid_token = false;
 let valid_client_secret = false;

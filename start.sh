@@ -27,7 +27,10 @@ cat > config.json << EOF
     "pexels_key": "${PEXELS_API_KEY:-}",
     "last_fm_key": "${LASTFM_API_KEY:-}"
   },
-  "upload_command": "upload"
+  "upload_command": "upload",
+  "blacklist": [
+    ${SERVER_BLACKLIST:-}
+  ]
 }
 EOF
 

@@ -241,6 +241,12 @@ function onMessage(msg){
     if(helper.debug)
         helper.log(msg.author.username, ':', msg.content);
 
+    if(msg.guild && Array.isArray(config.blacklist) && config.blacklist.includes(msg.guild.id)){
+        if(helper.debug)
+            helper.log(`Ignored command in blacklisted server: ${msg.guild.id} (${msg.guild.name})`);
+        return;
+    }
+
     commands.forEach(command => {
         let check_command = checkCommand(msg, command);
 
