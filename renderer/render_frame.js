@@ -895,12 +895,21 @@ module.exports = {
                                 response = await execFilePromise(upload_script, [`${file_path}/video.${options.type}`]);
                                 const url = new URL(response.stdout);
                             } else {
-                                const upload_command = config.upload_command.replace('{path}', `${file_path}/video.${options.type}`);
+                                const uploadPath = `${file_path}/video.${options.type}`;
+                                const commandParts = (config.upload_command.match(/(?:[^\s"]+|"[^"]*")+/g) || [])
+                                    .map(part => part.replace(/^"|"$/g, ''))
+                                    .map(part => part.replace('{path}', uploadPath));
+
+                                if (commandParts.length === 0)
+                                    throw new Error('Invalid upload_command: empty command');
+
+                                const uploadCommand = commandParts[0];
+                                const uploadArgs = commandParts.slice(1);
 
                                 if (helper.debug)
                                     console.log('running upload command: ', config.upload_command);
 
-                                response = await execPromise(upload_command);
+                                response = await execFilePromise(uploadCommand, uploadArgs);
                             }
                             
                             const url = new URL(response.stdout);
