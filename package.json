@@ -22,7 +22,7 @@
     "license": "MIT",
     "dependencies": {
         "@dmzoneill/urban-dictionary": "^3.0.3",
-        "@napi-rs/canvas": "^1.0.0",
+        "@napi-rs/canvas": "^1.0.1",
         "@twurple/api": "^8.1.4",
         "@twurple/auth": "^8.1.4",
         "axios": "^1.18.1",
