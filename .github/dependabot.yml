@@ -5,22 +5,30 @@ updates:
     schedule:
       interval: "daily"
     ignore:
-      - dependency-name: "tar"
-      - dependency-name: "mathjs"
-      - dependency-name: "chart.js"
-      - dependency-name: "canvas"
       - dependency-name: "lzma-native"
-      - dependency-name: "node-osr"
       - dependency-name: "osu-parser"
-      - dependency-name: "vm2"
       - dependency-name: "*"
         update-types: ["version-update:semver-major"]
     groups:
       twurple:
-        patterns: ["@twurple/*"]
+        patterns:
+          - "@twurple/*"
+
       rendering:
-        patterns: ["jimp", "chartjs-node-canvas"]
+        patterns:
+          - "@napi-rs/canvas"
+          - "chart.js"
+          - "jimp"
+
+      osu:
+        patterns:
+          - "node-osr"
+          - "rosu-pp-js"
+          - "ojsama"
+
       discord:
-        patterns: ["discord.js"]
+        patterns:
+          - "discord.js"
+
       devDependencies:
         dependency-type: "development"
