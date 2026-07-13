@@ -101,10 +101,10 @@ Thanks to anyone supporting me on [Patreon](https://www.patreon.com/LeaPhant), e
 
 ### Star History
 
-<a href="https://star-history.com/#Paraliyzedevo/flowabot&Date">
+<a href="https://www.star-history.com/?repos=Paraliyzedevo%2Fflowabot&type=date&legend=top-left">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Paraliyzedevo/flowabot&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Paraliyzedevo/flowabot&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Paraliyzedevo/flowabot&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=Paraliyzedevo/flowabot&type=date&theme=dark&legend=top-left&sealed_token=XSXEJNEhoYhn-R_BA_wYsPE1CBCtiAOjj40YDuvWXFoV8fGZts5IuUDJjx7Tis63KxYV0xdHBHhp1aPwFqw0WyWMASkfXurDqpN2rEfNU-zPsVejpP1lTg" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=Paraliyzedevo/flowabot&type=date&legend=top-left&sealed_token=XSXEJNEhoYhn-R_BA_wYsPE1CBCtiAOjj40YDuvWXFoV8fGZts5IuUDJjx7Tis63KxYV0xdHBHhp1aPwFqw0WyWMASkfXurDqpN2rEfNU-zPsVejpP1lTg" />
+   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Paraliyzedevo/flowabot&type=date&legend=top-left&sealed_token=XSXEJNEhoYhn-R_BA_wYsPE1CBCtiAOjj40YDuvWXFoV8fGZts5IuUDJjx7Tis63KxYV0xdHBHhp1aPwFqw0WyWMASkfXurDqpN2rEfNU-zPsVejpP1lTg" />
  </picture>
 </a>
