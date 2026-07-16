@@ -59,7 +59,7 @@
         "finalhandler": "^2.1.1",
         "polka": "^0.5.2",
         "serve-static": "^2.2.1",
-        "ws": "^8.19.0"
+        "ws": "^8.21.1"
     },
     "allowScripts": {
         "canvas@3.2.3": true,
