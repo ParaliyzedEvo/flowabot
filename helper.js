@@ -211,10 +211,10 @@ module.exports = {
         let emote;
 
         if(guild)
-            emote = guild.emojis.cache.find(emoji => emoji.name.toLowerCase() === emoteName.toLowerCase());
+            emote = guild.emojis.cache.find(emoji => emoji.name.toLowerCase() === emoteName.toLowerCase() && emoji.available);
 
         if(!emote)
-            emote = client.emojis.cache.find(emoji => emoji.name.toLowerCase() === emoteName.toLowerCase());
+            emote = client.emojis.cache.find(emoji => emoji.name.toLowerCase() === emoteName.toLowerCase() && emoji.available);
 
         return emote;
     },

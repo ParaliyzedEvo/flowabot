@@ -22,7 +22,7 @@ const helper = require('./helper.js');
 const { Chart } = require('chart.js/auto');
 const graphCanvas = createCanvas(600, 400);
 
-const Jimp = require('jimp');
+const { Jimp } = require('jimp');
 
 const getFrame = util.promisify(frame.get_frame);
 
@@ -33,7 +33,6 @@ const STAR_SCALING_FACTOR = 0.0675;
 const EXTREME_SCALING_FACTOR = 0.5;
 
 const config = require('./config.json');
-const { mod } = require('mathjs');
 
 let tracked_users = {};
 let retries = 0;
@@ -534,6 +533,10 @@ function convertStandardisedToClassic(score, object_count) {
     return Math.round((Math.pow(object_count, 2) * 32.57 + 100000) * score / 1000000);
 }
 
+function convertStandardisedToWither(score, object_count) {
+    return Math.round(((Math.pow(object_count, 2) * 36.49) + object_count * 2096) * Math.min(Math.pow(score / 1000000, 1.62), score / 1000000) + score * 0.1);
+}
+
 function getModSettingsString(mods) {
 	const appraochDifferentStyles = ["Linear", "Gravity", "InOut1", "InOut2", "Accelerate1", "Accelerate2", "Accelerate3", "Decelerate1", "Decelerate2", "Decelerate3"];
 	let string = "";
@@ -865,8 +868,10 @@ async function getScore(recent_raw, cb){
                 clockRate: speed,
             }
 
-			if (recent_raw.statistics.large_tick_hit)
+			if (recent_raw.passed && recent_raw.statistics.large_tick_hit) {
 				play_params.largeTickHits = recent_raw.statistics.large_tick_hit;
+                recent.countsb = recent_raw.maximum_statistics.large_tick_hit - recent_raw.statistics.large_tick_hit;
+            }
 
 			if (recent_raw.statistics.slider_tail_hit)
 				play_params.sliderEndHits = recent_raw.statistics.slider_tail_hit;
@@ -951,6 +956,7 @@ async function getScore(recent_raw, cb){
                     recent.ur = ur_response.ur;
                     recent.cvur = ur_response.cvur;
                     frames = ur_response.frames;
+                    if (!recent.countsb) recent.countsb = frames?.filter(x => x.result == 'sliderbreak').length;
                 }
 
                 strains_bar = await module.exports.get_strains_bar(beatmap_path, recent.mods.map(mod => mod.acronym).join(''), recent.fail_percent, recent.beatmapset_id, frames);
@@ -1454,13 +1460,14 @@ module.exports = {
         if(recent.lb > 0)
             lines[0] += `#${recent.lb}${helper.sep}`;
 
+        let object_count = recent.count300 + recent.count100 + recent.count50 + recent.countmiss;
+
         if(recent.legacy_score > 0) {
-            let score_string =`${recent.legacy_score.toLocaleString()} (${recent.score.toLocaleString()})`
-            lines[0] += `${score_string}`;
+            let score_string = recent.legacy_score.toLocaleString();
+            lines[0] += `${score_string}${helper.sep}Stable`;
         } else {
-            let object_count = recent.count300 + recent.count100 + recent.count50 + recent.countmiss;
-            let score_string = `${convertStandardisedToClassic(recent.score, object_count).toLocaleString()} (${recent.score.toLocaleString()})`;
-            lines[0] += `${score_string}`;
+            let score_string = recent.score.toLocaleString();
+            lines[0] += `${score_string}${helper.sep}Lazer`;
         }
 
         if(recent.pp_fc.toFixed(2) != recent.pp.toFixed(2))
@@ -1485,17 +1492,17 @@ module.exports = {
             lines[1] += `${recent.count100}x100`;
 
         if(recent.count50 > 0){
-            if(recent.count100 > 0) lines[1] += helper.sep;
+            if(recent.count100 > 0) lines[1] += ' • ';
             lines[1] += `${recent.count50}x50`;
         }
 
         if(recent.countmiss > 0){
-            if(recent.count100 > 0 || recent.count50 > 0) lines[1] += helper.sep;
+            if(recent.count100 > 0 || recent.count50 > 0) lines[1] += ' • ';
             lines[1] += `${recent.countmiss}xMiss`;
         }
 
         if(recent.countsb > 0){
-            if(recent.count100 > 0 || recent.count50 > 0 || recent.countmiss > 0) lines[1] += helper.sep;
+            if(recent.count100 > 0 || recent.count50 > 0) lines[1] += ' • ';
             lines[1] += `${recent.countsb}xSB`;
         }
 
@@ -1561,6 +1568,16 @@ module.exports = {
             {
                 name: lines[2],
                 value: lines[3]
+            },
+            {
+                name: "Classic Score",
+                value: convertStandardisedToClassic(recent.score, object_count).toLocaleString(),
+                inline: true
+            },
+            {
+                name: "WitherScore",
+                value: convertStandardisedToWither(recent.score, object_count).toLocaleString(),
+                inline: true
             }
         );
 
@@ -2249,7 +2266,7 @@ module.exports = {
             }
 
             if(bpms.length == 0)
-                throw 'An error occured getting the Beatmap BPM values';
+                throw 'An error occurred getting the Beatmap BPM values';
 
             bpms.push({ x: map.objects[map.objects.length - 1].time, y: bpms[bpms.length - 1]['y'] });
 
@@ -2277,16 +2294,16 @@ module.exports = {
             const outputChart = await graphCanvas.toBuffer('image/png');
             chart.destroy();
 
-            const graphImage = new Jimp(600, 400, '#263238E6');
+            const graphImage = new Jimp({ width: 600, height: 400, color: '#263238E6'});
             const _graph = await Jimp.read(outputChart);
             graphImage.composite(_graph, 0, 0);
 
-            const buffer = await graphImage.getBufferAsync('image/png');
+            const buffer = await graphImage.getBuffer('image/png');
 
             return buffer;
         }catch(e){
             helper.error(e);
-            throw 'An error occured creating the graph';
+            throw 'An error occurred creating the graph';
         }
     },
 
@@ -2916,7 +2933,7 @@ module.exports = {
 
             const output_frame = await getFrame(osu_file_path, max_strain_time_real - map.objects[0].time % 400, mods_array, [427, 320], {ar: ar, cs: cs, noreplay: true})
             
-            const graphImage = new Jimp(600, 400, '#263238E6');
+            const graphImage = new Jimp({ width: 600, height: 400, color: '#263238E6'});
             
             const _graph = await Jimp.read(outputChart);
             const _frame = await Jimp.read(output_frame);
@@ -2924,7 +2941,7 @@ module.exports = {
 
             graphImage.composite(_graph, 0, 0);
 
-            const buffer = await graphImage.getBufferAsync('image/png');
+            const buffer = await graphImage.getBuffer('image/png');
 
             return buffer;
         }catch(e){

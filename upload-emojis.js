@@ -20,8 +20,8 @@ const config = require('./config.json');
 let guilds = [];
 
 client.on('clientReady', () => {
-    client.guilds.cache.forEach(guild => {
-        if(guild.members.me.permissions.has(Discord.PermissionFlagsBits.ManageEmojisAndStickers))
+    [...client.guilds.cache].forEach(guild => {
+        if(guild.me.hasPermission('MANAGE_EMOJIS'))
             guilds.push(guild);
     });
     
