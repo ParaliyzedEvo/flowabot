@@ -8,13 +8,29 @@ module.exports = {
     example: [
         {
             run: "bmi 185cm 70kg",
-            example: "Returns BMI for 185cm height and 70kg weight."
+            result: "Returns BMI for 185cm height and 70kg weight."
         },
         {
             run: "bmi 1.56m 56kg",
-            example: "Returns BMI for 1.56m height and 56kg weight."
+            result: "Returns BMI for 1.56m height and 56kg weight."
         }
     ],
+
+    options: [
+        {
+            name: 'height',
+            description: 'Height in meters or centimeters',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'weight',
+            description: 'Weight in kilograms',
+            type: 'string',
+            required: true
+        }
+    ],
+    
     call: obj => {
         let { argv } = obj;
         let weight, height;

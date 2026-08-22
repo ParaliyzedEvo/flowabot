@@ -22,6 +22,28 @@ module.exports = {
     ],
     configRequired: ['credentials.client_id', 'credentials.client_secret'],
     envRequired: ['OSU_CLIENT_ID', 'OSU_CLIENT_SECRET'],
+    
+    options: [
+        {
+            name: 'amounts',
+            description: 'pp amounts to add, separated by +, e.g. 300+350',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'username',
+            description: 'osu! username or @mention (defaults to your linked ign)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'beatmap url',
+            description: 'Beatmap ID or link',
+            type: 'string',
+            required: false
+        }
+    ],
+    
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg, user_ign } = obj;

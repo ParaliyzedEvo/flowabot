@@ -33,6 +33,94 @@ module.exports = {
         }
     ],
     configRequired: ['debug', 'osu_cache_path'],
+
+    options: [
+        {
+            name: 'beatmap url',
+            description: 'URL of the beatmap to calculate pp for',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'mods',
+            description: 'Mods to apply, prefixed with + (e.g. +HDDT)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'accuracy',
+            description: 'Accuracy percentage (e.g. 99.23%)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: '100s',
+            description: 'Number of 100s/oks (e.g. 2x100)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: '50s',
+            description: 'Number of 50s/mehs (e.g. 1x50)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'misses',
+            description: 'Number of misses (e.g. 3m)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'combo',
+            description: 'Max combo achieved (e.g. 342x)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'clock rate',
+            description: 'Custom clock/speed rate (e.g. 1.2*, or decimal + x like 1.2x)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'od',
+            description: 'Overall difficulty override (e.g. OD9.5)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'ar',
+            description: 'Approach Rate value',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'cs',
+            description: 'Circle size override (e.g. CS6)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'hp',
+            description: 'HP drain rate override (e.g. HP8)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'large tick hits',
+            description: 'Number of large tick hits, for lazer scoring (e.g. 5L)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'slider tail hits',
+            description: 'Number of slider tail hits, for lazer scoring (e.g. 3S)',
+            type: 'string',
+            required: false
+        }
+    ],
+
     call: async obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg, last_beatmap } = obj;

@@ -9,6 +9,16 @@ module.exports = {
         run: "urban help",
         result: "Returns the definition for the word 'help'."
     },
+
+    options: [
+        {
+            name: 'word',
+            description: 'The word to define',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {   
             let { argv } = obj;

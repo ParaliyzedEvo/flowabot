@@ -10,6 +10,22 @@ module.exports = {
         run: "ar 8 +DT",
         result: "Returns AR of AR8 with DT applied."
     },
+
+    options: [
+        {
+            name: 'ar',
+            description: 'Approach Rate value',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'mods',
+            description: 'Mods to apply (e.g. +DT, +HT)',
+            type: 'string',
+            required: false
+        }
+    ],
+    
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv } = obj;

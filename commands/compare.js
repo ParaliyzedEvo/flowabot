@@ -31,6 +31,22 @@ module.exports = {
     ],
     configRequired: ["credentials.client_id", "credentials.client_secret"],
     envRequired: ['OSU_CLIENT_ID', 'OSU_CLIENT_SECRET'],
+
+    options: [
+        {
+            name: 'username',
+            description: 'osu! username or @mention or * for all users',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'mods',
+            description: 'List of mods to compare with',
+            type: 'string',
+            required: false
+        }
+    ],
+    
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg, user_ign, last_beatmap } = obj;

@@ -15,6 +15,22 @@ module.exports = {
         run: "fantasychange elf medium",
         result: "Generates a medium-length elf name and sets it as your nickname."
     },
+
+    options: [
+        {
+            name: 'type',
+            description: 'The type of fantasy name to generate',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'length',
+            description: 'The length of the fantasy name to generate',
+            type: 'string',
+            required: false
+        }
+    ],
+    
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg } = obj;

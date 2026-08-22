@@ -5,7 +5,7 @@ process.on('uncaughtException', function(err){
     console.error(err.stack);
 });
 
-const { Client, GatewayIntentBits, IntentsBitField, Partials } = require('discord.js');
+const { Client, GatewayIntentBits, IntentsBitField, Partials, ApplicationCommandOptionType } = require('discord.js');
 const fs = require('fs').promises;
 const path = require('path');
 const objectPath = require("object-path");
@@ -13,6 +13,100 @@ const chalk = require('chalk');
 
 const osu = require('./osu.js');
 const helper = require('./helper.js');
+
+const OPTION_TYPE_MAP = {
+    string: ApplicationCommandOptionType.String,
+    integer: ApplicationCommandOptionType.Integer,
+    number: ApplicationCommandOptionType.Number,
+    boolean: ApplicationCommandOptionType.Boolean,
+    user: ApplicationCommandOptionType.User,
+    channel: ApplicationCommandOptionType.Channel
+};
+
+function buildSlashCommands(commandList){
+    return commandList
+        .filter(c => Array.isArray(c.options))
+        .map(c => {
+            const name = (Array.isArray(c.command) ? c.command[0] : c.command).toLowerCase();
+            return {
+                name,
+                description: (c.description || name).slice(0, 100),
+                options: c.options.map(opt => ({
+                    name: opt.name.toLowerCase(),
+                    description: opt.description.slice(0, 100),
+                    type: OPTION_TYPE_MAP[opt.type] ?? ApplicationCommandOptionType.String,
+                    required: !!opt.required
+                }))
+            };
+        });
+}
+
+function handleCommandResponse(promise, channelLike){
+    return Promise.resolve(promise).then(response => {
+        if(!response) return;
+
+        let edit_promise, replace_promise, remove_path, content;
+
+        if(typeof response === 'object' && 'edit_promise' in response){
+            ({edit_promise} = response);
+            delete response.edit_promise;
+        }
+        if(typeof response === 'object' && 'replace_promise' in response){
+            ({replace_promise} = response);
+            delete response.replace_promise;
+        }
+        if(typeof response === 'object' && 'remove_path' in response){
+            ({remove_path} = response);
+            delete response.remove_path;
+        }
+        if(typeof response === 'object' && 'content' in response){
+            ({content} = response);
+            delete response.content;
+        }
+        if(content)
+            response.content = content;
+
+        let message_promise = channelLike.send(response);
+
+        message_promise.catch(err => {
+            channelLike.sendError(`Couldn't run command: **${err}**`);
+        });
+
+        return Promise.all([message_promise, edit_promise, replace_promise]).then(responses => {
+            let message = responses[0];
+            let edit_result = responses[1];
+            let replace_result = responses[2];
+
+            if(edit_result)
+                message.edit(edit_result).catch(helper.error);
+
+            if(replace_result){
+                channelLike.followUp(replace_result)
+                    .catch(err => channelLike.sendError(`Couldn't run command: **${err}**`))
+                    .finally(() => {
+                        message.delete().catch(() => {});
+
+                        if(typeof replace_result === 'object' && 'remove_path' in replace_result){
+                            ({remove_path} = replace_result);
+                            delete replace_result.remove_path;
+                        }
+                        if(remove_path)
+                            fs.rm(remove_path, { recursive: true }).catch(helper.error);
+                    });
+            }
+
+            if(remove_path)
+                fs.rm(remove_path, { recursive: true }).catch(helper.error);
+        });
+    }).catch(err => {
+        if(typeof err === 'object')
+            channelLike.sendError(err);
+        else
+            channelLike.sendError(`Couldn't run command: **${err}**`);
+
+        helper.error(err);
+    });
+}
 
 const intents = process.env.DISCORD_INTENTS 
     ? process.env.DISCORD_INTENTS.split(',').map(i => GatewayIntentBits[i]) 
@@ -112,8 +206,9 @@ function checkCommand(msg, command){
 
 let commands = [];
 let commands_path = path.resolve(__dirname, 'commands');
-
-fs.readdir(commands_path).then(items => {
+    
+async function loadCommands(){
+    const items = await fs.readdir(commands_path);
     items.forEach(item => {
         if(path.extname(item) == '.js'){
             let command = require(path.resolve(commands_path, item));
@@ -209,25 +304,20 @@ fs.readdir(commands_path).then(items => {
     });
 
     helper.init(commands);
-}).catch(err => {
-    helper.error(err);
-    throw "Unable to read commands folder";
-});
+}
 
 let handlers = [];
 let handlers_path = path.resolve(__dirname, 'handlers');
 
-fs.readdir(handlers_path).then(items => {
+async function loadHandlers(){
+    const items = await fs.readdir(handlers_path);
     items.forEach(item => {
         if(path.extname(item) == '.js'){
             let handler = require(path.resolve(handlers_path, item));
             handlers.push(handler);
         }
     });
-}).catch(err => {
-    helper.error(err);
-    throw "Unable to read handlers folder";
-});
+}
 
 function onMessage(msg){
 	// remove bridged escape characters
@@ -261,78 +351,10 @@ function onMessage(msg){
                     last_message
                 });
 
-                Promise.resolve(promise).then(response => {
-                    if(response){
-                        let message_promise, edit_promise, replace_promise, remove_path, content;
-
-                        if(typeof response === 'object' && 'edit_promise' in response){
-                            ({edit_promise} = response);
-                            delete response.edit_promise;
-                        }
-
-						if(typeof response === 'object' && 'replace_promise' in response){
-                            ({replace_promise} = response);
-                            delete response.replace_promise;
-                        }
-
-                        if(typeof response === 'object' && 'remove_path' in response){
-							({remove_path} = response);
-                            delete response.remove_path;
-                        }
-
-						if(typeof response === 'object' && 'content' in response){
-							({content} = response);
-                            delete response.content;
-						}
-
-						if(content)
-                            response.content = content;
-
-	                        message_promise = msg.channel.send(response);
-
-						message_promise.catch(err => {
-							msg.channel.send(`Couldn't run command: **${err}**`);
-						});
-
-
-                        Promise.all([message_promise, edit_promise, replace_promise]).then(responses => {
-                            let message = responses[0];
-                            let edit_promise = responses[1];
-							let replace_promise = responses[2];
-
-                            if(edit_promise)
-                                message.edit(edit_promise).catch(helper.error);
-
-							if(replace_promise){
-								msg.channel.send(replace_promise)
-								.catch(err => {
-									msg.channel.send(`Couldn't run command: **${err}**`);
-								}).finally(() => {
-									message.delete();
-
-									if(typeof replace_promise === 'object' && 'remove_path' in replace_promise){
-										({remove_path} = replace_promise);
-			                            delete replace_promise.remove_path;
-			                        }
-
-									if(remove_path)
-										fs.rm(remove_path, { recursive: true }).catch(helper.error);
-								});
-							}
-
-                            if(remove_path)
-                                fs.rm(remove_path, { recursive: true }).catch(helper.error);
-                        }).catch(err => {
-							msg.channel.send(`Couldn't run command: **${err}**`);
-						});
-                    }
-                }).catch(err => {
-                    if(typeof err === 'object')
-                        msg.channel.send(err);
-                    else
-                        msg.channel.send(`Couldn't run command: **${err}**`);
-
-                    helper.error(err);
+                handleCommandResponse(promise, {
+                    send: payload => msg.channel.send(payload),
+                    sendError: payload => msg.channel.send(payload),
+                    followUp: payload => msg.channel.send(payload)
                 });
             }
         }else if(check_command !== false){
@@ -356,18 +378,138 @@ function onMessage(msg){
 
 client.on('messageCreate', onMessage);
 
-client.on('clientReady', () => {
+async function onInteraction(interaction){
+    if(!interaction.isChatInputCommand())
+        return;
+
+    if(interaction.guild && Array.isArray(config.blacklist) && config.blacklist.includes(interaction.guild.id)){
+        return interaction.reply({ content: "This command isn't available in this server.", ephemeral: true });
+    }
+
+    const command = commands.find(c => {
+        let names = Array.isArray(c.command) ? c.command : [c.command];
+        return names.map(n => n.toLowerCase()).includes(interaction.commandName);
+    });
+
+    if(!command)
+        return;
+
+    if(command.permsRequired && interaction.member){
+        let hasPermission = command.permsRequired.length === 0
+            || command.permsRequired.some(perm => interaction.member.permissions.has(perm));
+
+        if(!hasPermission)
+            return interaction.reply({ content: 'Insufficient permissions for running this command.', ephemeral: true });
+    }
+
+    let argv = [interaction.commandName];
+
+    (command.options || []).forEach(opt => {
+        let val;
+        switch(opt.type){
+            case 'integer': val = interaction.options.getInteger(opt.name); break;
+            case 'number':  val = interaction.options.getNumber(opt.name); break;
+            case 'boolean': val = interaction.options.getBoolean(opt.name); break;
+            case 'user': {
+                let u = interaction.options.getUser(opt.name);
+                val = u ? `<@${u.id}>` : null;
+                break;
+            }
+            case 'channel': {
+                let ch = interaction.options.getChannel(opt.name);
+                val = ch ? `<#${ch.id}>` : null;
+                break;
+            }
+            default: val = interaction.options.getString(opt.name);
+        }
+        argv.push(val === null || val === undefined ? '' : String(val));
+    });
+
+    await interaction.deferReply();
+
+    const fakeMsg = {
+        author: interaction.user,
+        member: interaction.member,
+        guild: interaction.guild,
+        channel: interaction.channel
+    };
+
+    let promise = command.call({
+        msg: fakeMsg,
+        argv,
+        client,
+        user_ign,
+        last_beatmap,
+        last_message
+    });
+
+    handleCommandResponse(promise, {
+        send: payload => interaction.editReply(payload),
+        sendError: payload => interaction.editReply(payload).catch(() => interaction.followUp(payload)),
+        followUp: payload => interaction.followUp(payload)
+    });
+}
+
+client.on('interactionCreate', onInteraction);
+
+async function syncSlashCommandsForGuild(guild){
+    const slashData = buildSlashCommands(commands);
+    const isBlacklisted = Array.isArray(config.blacklist) && config.blacklist.includes(guild.id);
+
+    try {
+        await guild.commands.set(isBlacklisted ? [] : slashData);
+    }catch(err){
+        helper.error(err);
+    }
+}
+
+async function syncAllSlashCommands(){
+    if(process.env.DISCORD_GUILD_ID){
+        // dev mode: only sync the one test guild
+        const guild = client.guilds.cache.get(process.env.DISCORD_GUILD_ID);
+        if(guild) await syncSlashCommandsForGuild(guild);
+        return;
+    }
+
+    for(const guild of client.guilds.cache.values()){
+        await syncSlashCommandsForGuild(guild);
+    }
+}
+
+client.on('guildCreate', guild => {
+    syncSlashCommandsForGuild(guild).catch(helper.error);
+});
+
+client.on('clientReady', async () => {
 	helper.log('flowabot is ready');
+
+	try {
+		await syncAllSlashCommands();
+		helper.log(`Synced slash commands across ${client.guilds.cache.size} guild(s).`);
+	}catch(err){
+		helper.error(err);
+	}
+
 	if(process.env.DISCORD_CLIENT_ID ?? config.credentials.discord_client_id)
 		helper.log(
 			`Invite bot to server: ${chalk.blueBright('https://discord.com/api/oauth2/authorize?client_id='
 			+ (process.env.DISCORD_CLIENT_ID ?? config.credentials.discord_client_id) + '&permissions=8&scope=bot')}`);
 });
 
-client.login(process.env.DISCORD_BOT_TOKEN ?? config.credentials.bot_token).catch(err => {
-	console.error('');
-	console.error(chalk.redBright("Couldn't log into Discord. Wrong bot token?"));
-	console.error('');
-	console.error(err);
-	process.exit();
-});
+(async () => {
+    try {
+        await loadCommands();
+        await loadHandlers();
+    }catch(err){
+        helper.error(err);
+        throw "Unable to read commands/handlers folder";
+    }
+
+    client.login(process.env.DISCORD_BOT_TOKEN ?? config.credentials.bot_token).catch(err => {
+        console.error('');
+        console.error(chalk.redBright("Couldn't log into Discord. Wrong bot token?"));
+        console.error('');
+        console.error(err);
+        process.exit();
+    });
+})();

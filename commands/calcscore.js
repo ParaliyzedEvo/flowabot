@@ -51,7 +51,7 @@ module.exports = {
     command: ['calcscore', 'scorecalc', 'cs'],
     description: "Calculate maximum score for a beatmap.",
     argsRequired: 1,
-    usage: '<map link> [+mods]',
+    usage: '<beatmap url> [+mods]',
     example: [
         {
             run: "calcscore https://osu.ppy.sh/b/75",
@@ -62,6 +62,22 @@ module.exports = {
             result: "Returns the maximum score for Disco Prince +HDHRDT."
         }
     ],
+
+    options: [
+        {
+            name: 'beatmap url',
+            description: 'URL of the beatmap to calculate score for',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'mods',
+            description: 'List of mods to calculate score with',
+            type: 'string',
+            required: false
+        }
+    ],
+    
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg, last_beatmap } = obj;

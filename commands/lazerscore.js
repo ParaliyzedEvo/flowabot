@@ -72,6 +72,20 @@ module.exports = {
             result: "Returns the maximum lazer classic score for Disco Prince +HDHRDT."
         }
     ],
+    options: [
+        {
+            name: 'beatmap url',
+            description: 'The url of the beatmap to calculate pp for',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'mods',
+            description: 'The mods to apply to the beatmap',
+            type: 'string',
+            required: false
+        }
+    ],
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv } = obj;

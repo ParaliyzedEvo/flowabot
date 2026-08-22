@@ -19,6 +19,16 @@ module.exports = {
         run: 'ffz WoweeW',
         result: 'Returns WoweeW FFZ emote'
     },
+
+    options: [
+        {
+            name: 'emote',
+            description: 'The FFZ emote to show',
+            type: 'string',
+            required: true
+        }
+    ],
+    
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg } = obj;

@@ -26,6 +26,40 @@ module.exports = {
         }
     ],
     configRequired: ['debug'],
+
+    options: [
+        {
+            name: 'beatmap url',
+            description: 'Beatmap ID or link',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'mods',
+            description: 'Mods to apply, prefixed with + (e.g. +HDDT)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'ar',
+            description: 'Approach Rate value',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'cs',
+            description: 'Circle size override (e.g. CS6)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'mode',
+            description: 'Strain type to graph (aim/speed)',
+            type: 'string',
+            required: false
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg, last_beatmap } = obj;

@@ -4,6 +4,7 @@ module.exports = {
     command: 'flowabot',
     description: "Show information about this bot.",
     configRequired: ['prefix'],
+    options: [],
     call: obj => {
         let embed = {
             description: "Modular Discord bot with various features including twitch commands and advanced osu! commands.",

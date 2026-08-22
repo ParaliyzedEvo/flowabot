@@ -10,6 +10,28 @@ module.exports = {
         result: 'Returns SourPls emote.'
     },
     argsRequired: 1,
+
+    options: [
+        {
+            name: 'emote 1',
+            description: 'The first emote to print',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'emote 2',
+            description: 'The second emote to print',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'emote 3',
+            description: 'The third emote to print',
+            type: 'string',
+            required: false
+        }
+    ],
+    
     call: obj => {
         let { msg, argv, client } = obj;
 

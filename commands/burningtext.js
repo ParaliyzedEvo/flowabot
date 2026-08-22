@@ -12,6 +12,16 @@ module.exports = {
         run: 'burningtext Burning Text',
         result: "It burns."
     },
+
+    options: [
+        {
+            name: 'text',
+            description: 'Text to generate as a gif',
+            type: 'string',
+            required: true
+        }
+    ],
+    
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv } = obj;

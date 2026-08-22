@@ -40,6 +40,190 @@ module.exports = {
         }
     ],
     configRequired: ['debug'],
+
+    options: [
+        {
+            name: 'beatmap url',
+            description: 'URL of the beatmap to render (defaults to last beatmap in channel)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'mods',
+            description: 'Mods to apply, prefixed with + (e.g. +DT, +HDHR)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'timestamp',
+            description: 'Time in the map to render, as mm:ss or hh:mm:ss',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'time',
+            description: 'Time in the map to render, in seconds (plain number)',
+            type: 'number',
+            required: false
+        },
+        {
+            name: 'osr',
+            description: 'Replay file (.osr) URL or attachment to render with',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'mode',
+            description: 'Render mode: strains, aim, speed, or preview',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'fail',
+            description: 'Render the point where the player failed on the last score',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'hd / hidden',
+            description: 'Render with Hidden mod visuals applied',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'tc / traceable',
+            description: 'Render with Traceable mod visuals applied',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'fl / flashlight',
+            description: 'Render with Flashlight mod visuals applied',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'mp4',
+            description: 'Force output as an mp4 video instead of a gif',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'audio',
+            description: 'Include audio in the render (forces mp4 output)',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'plain',
+            description: 'Render without audio',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'percent',
+            description: 'Playback speed as a percentage (e.g. 50%), minimum 1%',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'speed multiplier',
+            description: 'Playback speed as a multiplier (e.g. 1.5*)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'fps',
+            description: 'Frame rate for video output, 1-240 (e.g. 120fps), forces mp4 output',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'analyze',
+            description: 'Render in analyze mode',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'nointerpolate',
+            description: 'Disable cursor movement interpolation',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'lagtrain',
+            description: 'Render with lagtrain visuals/behavior',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'argon',
+            description: 'Render using the Argon skin/UI style',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'lazer',
+            description: 'Render using osu!lazer rendering behavior',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'stable',
+            description: 'Render using osu!stable rendering behavior',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'full',
+            description: 'Render the full play (10 second length)',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'choke',
+            description: 'Render the choke point of the play (10 second length)',
+            type: 'boolean',
+            required: false
+        },
+        {
+            name: 'length',
+            description: 'Duration of the render in seconds (e.g. 4s); 10s+ forces mp4',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'combo / speed',
+            description: 'Combo to seek to (e.g. 353x) or speed multiplier if decimal (e.g. 1.5x)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'ar',
+            description: 'Approach Rate value',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'cs',
+            description: 'Circle size override (e.g. CS6)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'od',
+            description: 'Overall difficulty override (e.g. OD9)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'objects',
+            description: 'Comma-separated object list in parentheses to render up to (e.g. (1,2,3))',
+            type: 'string',
+            required: false
+        }
+    ],
+
     call: obj => {
         return new Promise(async (resolve, reject) => {
             let { argv, msg, last_beatmap, webui } = obj;

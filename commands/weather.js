@@ -17,6 +17,16 @@ module.exports = {
     },
     configRequired: ['credentials.open_weather_map_api'],
     envRequired: ['OPENWEATHERMAP_KEY'],
+
+    options: [
+        {
+            name: 'city',
+            description: 'The city to get weather information for',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg } = obj;

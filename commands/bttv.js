@@ -19,6 +19,16 @@ module.exports = {
         run: 'bttv WoweeHOP',
         result: 'Returns WoweeHOP BTTV emote'
     },
+
+    options: [
+        {
+            name: 'emote name',
+            description: 'Name of the BTTV emote to display',
+            type: 'string',
+            required: true
+        }
+    ],
+    
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg } = obj;

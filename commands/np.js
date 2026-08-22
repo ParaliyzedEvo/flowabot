@@ -18,6 +18,16 @@ module.exports = {
     configRequired: ['credentials.last_fm_key'],
     envRequired: ['LAST_FM_KEY'],
     intentRequired: ['GuildPresences'],
+
+    options: [
+        {
+            name: 'username',
+            description: 'The last.fm username to look up',
+            type: 'string',
+            required: false
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg } = obj;

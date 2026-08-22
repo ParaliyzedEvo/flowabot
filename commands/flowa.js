@@ -17,6 +17,16 @@ module.exports = {
     },
     configRequired: ['credentials.pexels_key'],
     envRequired: ['PEXELS_KEY'],
+
+    options: [
+        {
+            name: 'tags',
+            description: 'Optional tags separated by space',
+            type: 'string',
+            required: false
+        }
+    ],
+    
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv } = obj;

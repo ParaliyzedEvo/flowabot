@@ -11,6 +11,16 @@ module.exports = {
             result: "Returns the time it took to ping google.com"
         },
     ],
+
+    options: [
+        {
+            name: 'url',
+            description: 'URL to ping',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: obj => {
         return new Promise(async (resolve, reject) => {
             let { argv } = obj;

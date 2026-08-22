@@ -45,6 +45,16 @@ module.exports = {
     description: "Run SQL query.",
     argsRequired: 1,
     usage: '<query>',
+
+    options: [
+        {
+            name: 'query',
+            description: 'SQL query to execute',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: obj => {
         return new Promise(async (resolve, reject) => {
             const { argv, msg } = obj;

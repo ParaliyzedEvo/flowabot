@@ -22,6 +22,22 @@ module.exports = {
         }
     ],
     configRequired: ['debug'],
+
+    options: [
+        {
+            name: 'beatmap url',
+            description: 'URL of the beatmap to display BPM graph for',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'mods',
+            description: 'Mods to apply (e.g. +DT, +HT)',
+            type: 'string',
+            required: false
+        }
+    ],
+    
     call: obj => {
         return new Promise(async (resolve, reject) => {
             let { argv, msg, last_beatmap } = obj;

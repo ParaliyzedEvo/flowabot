@@ -27,6 +27,52 @@ module.exports = {
         result: "Calculates pp on this beatmap with DT applied."
     },
     configRequired: ['debug', 'osu_cache_path'],
+
+    options: [
+        {
+            name: 'beatmap url',
+            description: 'The url of the beatmap to calculate pp for',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'mods',
+            description: 'The mods to apply to the beatmap',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'accuracy',
+            description: 'The accuracy percentage for the play',
+            type: 'string',
+            required: false
+        },
+        {
+            name: '100s',
+            description: 'Number of 100s/oks (e.g. 2x100)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: '50s',
+            description: 'Number of 50s/mehs (e.g. 1x50)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'misses',
+            description: 'Number of misses (e.g. 3m)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'combo',
+            description: 'Max combo achieved (e.g. 342x)',
+            type: 'string',
+            required: false
+        },
+    ],
+
     call: async obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg, last_beatmap } = obj;

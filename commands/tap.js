@@ -15,6 +15,22 @@ module.exports = {
         }
     ],
     argsRequired: 2,
+
+    options: [
+        {
+            name: 'bpm',
+            description: 'Beats per minute',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'beat snap divisor',
+            description: 'Beat snap divisor (e.g. 1/4)',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv } = obj;

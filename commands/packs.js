@@ -17,6 +17,22 @@ module.exports = {
             result: "Returns the packs containing the given beatmap Disco Prince."
         }
     ],
+
+    options: [
+        {
+            name: 'beatmap url',
+            description: 'Beatmap ID or link',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'mods',
+            description: 'Mods to apply (e.g. +DT, +HT)',
+            type: 'string',
+            required: false
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg, last_beatmap } = obj;

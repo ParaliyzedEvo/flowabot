@@ -21,6 +21,16 @@ module.exports = {
             result: "Returns the current time in London."
         }
     ],
+
+    options: [
+        {
+            name: 'city',
+            description: 'Name of the place to get the time for',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv } = obj;

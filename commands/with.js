@@ -21,6 +21,28 @@ module.exports = {
     ],
     configRequired: ["credentials.client_id", "credentials.client_secret"],
     envRequired: ['OSU_CLIENT_ID', 'OSU_CLIENT_SECRET'],
+
+    options: [
+        {
+            name: 'beatmap url',
+            description: 'URL of the beatmap to render (defaults to last beatmap in channel)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'mods',
+            description: 'Mods to apply, prefixed with + (e.g. +HDDT)',
+            type: 'string',
+            required: false
+        },
+        {
+            name: 'accuracy',
+            description: 'Accuracy percentage (e.g. 99.23%)',
+            type: 'string',
+            required: false
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg, user_ign, last_beatmap } = obj;

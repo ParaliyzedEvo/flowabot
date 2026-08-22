@@ -16,6 +16,16 @@ module.exports = {
             result: `Returns help on how to use the \`${helper.prefix}pp\` command.`
         }
     ],
+    
+    options: [
+        {
+            name: 'command',
+            description: 'The command to get help for',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: obj => {
         let { argv } = obj;
         return helper.commandHelp(argv[1]);

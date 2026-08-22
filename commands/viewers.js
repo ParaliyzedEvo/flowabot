@@ -22,6 +22,16 @@ module.exports = {
     },
     configRequired: ['credentials.twitch_client_id', 'credentials.twitch_client_secret'],
     envRequired: ['TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET'],
+
+    options: [
+        {
+            name: 'twitch username',
+            description: 'Twitch username to check uptime/downtime for',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: async obj => {
         let { argv } = obj;
         let channel_name = argv[1];

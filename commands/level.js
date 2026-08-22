@@ -65,6 +65,16 @@ module.exports = {
 	],
 	configRequired: ["credentials.client_id", "credentials.client_secret"],
     envRequired: ['OSU_CLIENT_ID', 'OSU_CLIENT_SECRET'],
+
+	options: [
+        {
+            name: 'username',
+            description: 'The osu! username to calculate level for (defaults to your linked ign)',
+            type: 'string',
+            required: false
+        }
+    ],
+
 	call: (obj) => {
 		return new Promise((resolve, reject) => {
 			let { argv, msg, user_ign } = obj;

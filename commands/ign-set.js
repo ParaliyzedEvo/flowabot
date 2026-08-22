@@ -8,6 +8,16 @@ module.exports = {
         run: "ign-set nathan on osu",
         result: "Sets your osu! username to nathan on osu."
     },
+
+    options: [
+        {
+            name: 'username',
+            description: 'The osu! username to set',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             let { msg, user_ign } = obj;

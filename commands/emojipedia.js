@@ -9,6 +9,16 @@ module.exports = {
         run: "emojipedia 🤔",
         result: "Returns thinking emoji information."
     },
+
+    options: [
+        {
+            name: 'emoji',
+            description: 'The emoji to look up',
+            type: 'string',
+            required: true
+        }
+    ],
+    
     call: async (obj) => {
         const { argv } = obj;
         const emoji = argv.slice(1).join('').trim();

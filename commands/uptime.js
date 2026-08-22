@@ -27,6 +27,16 @@ module.exports = {
         }
     ],
     configRequired: ['credentials.twitch_client_id', 'credentials.twitch_token'],
+
+    options: [
+        {
+            name: 'twitch username',
+            description: 'Twitch username to check uptime/downtime for',
+            type: 'string',
+            required: true
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             const { argv } = obj;

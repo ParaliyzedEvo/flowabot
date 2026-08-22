@@ -13,6 +13,22 @@ module.exports = {
     },
     configRequired: ["credentials.client_id", "credentials.client_secret"],
     envRequired: ['OSU_CLIENT_ID', 'OSU_CLIENT_SECRET'],
+
+    options: [
+        {
+            name: 'username',
+            description: 'osu! username or @mention (defaults to your linked ign)',
+            type: 'string',
+            required: true
+        },
+        {
+            name: 'top play limit',
+            description: 'Number of top plays to track (1-100, default 50)',
+            type: 'string',
+            required: false
+        }
+    ],
+
     call: obj => {
         return new Promise((resolve, reject) => {
             let { argv, msg, user_ign } = obj;
