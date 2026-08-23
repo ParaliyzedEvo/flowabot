@@ -30,7 +30,7 @@ function buildSlashCommands(commandList){
             const name = (Array.isArray(c.command) ? c.command[0] : c.command).toLowerCase();
             return {
                 name,
-                description: (c.description || name).slice(0, 100),
+                description: (Array.isArray(c.description) ? c.description.join('\n') : (c.description || name)).slice(0, 100),
                 options: c.options.map(opt => ({
                     name: opt.name.toLowerCase(),
                     description: opt.description.slice(0, 100),

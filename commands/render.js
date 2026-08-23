@@ -85,19 +85,19 @@ module.exports = {
             required: false
         },
         {
-            name: 'hd/hidden',
+            name: 'hidden',
             description: 'Render with Hidden mod visuals applied',
             type: 'boolean',
             required: false
         },
         {
-            name: 'tc/traceable',
+            name: 'traceable',
             description: 'Render with Traceable mod visuals applied',
             type: 'boolean',
             required: false
         },
         {
-            name: 'fl/flashlight',
+            name: 'flashlight',
             description: 'Render with Flashlight mod visuals applied',
             type: 'boolean',
             required: false
@@ -111,12 +111,6 @@ module.exports = {
         {
             name: 'audio',
             description: 'Include audio in the render (forces mp4 output)',
-            type: 'boolean',
-            required: false
-        },
-        {
-            name: 'plain',
-            description: 'Render without audio',
             type: 'boolean',
             required: false
         },
@@ -139,26 +133,8 @@ module.exports = {
             required: false
         },
         {
-            name: 'analyze',
-            description: 'Render in analyze mode',
-            type: 'boolean',
-            required: false
-        },
-        {
             name: 'nointerpolate',
             description: 'Disable cursor movement interpolation',
-            type: 'boolean',
-            required: false
-        },
-        {
-            name: 'lagtrain',
-            description: 'Render with lagtrain visuals/behavior',
-            type: 'boolean',
-            required: false
-        },
-        {
-            name: 'argon',
-            description: 'Render using the Argon skin/UI style',
             type: 'boolean',
             required: false
         },
@@ -193,7 +169,7 @@ module.exports = {
             required: false
         },
         {
-            name: 'combo/speed',
+            name: 'combo',
             description: 'Combo to seek to (e.g. 353x) or speed multiplier if decimal (e.g. 1.5x)',
             type: 'string',
             required: false
@@ -216,12 +192,6 @@ module.exports = {
             type: 'string',
             required: false
         },
-        {
-            name: 'objects',
-            description: 'Comma-separated object list in parentheses to render up to (e.g. (1,2,3))',
-            type: 'string',
-            required: false
-        }
     ],
 
     call: obj => {
