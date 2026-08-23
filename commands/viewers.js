@@ -25,7 +25,7 @@ module.exports = {
 
     options: [
         {
-            name: 'twitch username',
+            name: 'username',
             description: 'Twitch username to check uptime/downtime for',
             type: 'string',
             required: true

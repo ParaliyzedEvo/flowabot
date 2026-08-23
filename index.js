@@ -455,9 +455,28 @@ client.on('interactionCreate', onInteraction);
 async function syncSlashCommandsForGuild(guild){
     const slashData = buildSlashCommands(commands);
     const isBlacklisted = Array.isArray(config.blacklist) && config.blacklist.includes(guild.id);
+    const desired = isBlacklisted ? [] : slashData;
+
+    const ownNames = new Set(
+        commands.flatMap(c => Array.isArray(c.command) ? c.command : [c.command])
+            .map(n => n.toLowerCase())
+    );
 
     try {
-        await guild.commands.set(isBlacklisted ? [] : slashData);
+        const existing = await guild.commands.fetch();
+
+        for(const [id, cmd] of existing){
+            if(ownNames.has(cmd.name) && !desired.find(d => d.name === cmd.name))
+                await guild.commands.delete(id);
+        }
+
+        for(const cmdData of desired){
+            const match = existing.find(c => c.name === cmdData.name);
+            if(match)
+                await guild.commands.edit(match.id, cmdData);
+            else
+                await guild.commands.create(cmdData);
+        }
     }catch(err){
         helper.error(err);
     }
