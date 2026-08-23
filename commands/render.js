@@ -43,7 +43,7 @@ module.exports = {
 
     options: [
         {
-            name: 'beatmap url',
+            name: 'beatmap',
             description: 'URL of the beatmap to render (defaults to last beatmap in channel)',
             type: 'string',
             required: false

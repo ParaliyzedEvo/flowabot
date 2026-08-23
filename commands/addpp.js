@@ -37,7 +37,7 @@ module.exports = {
             required: false
         },
         {
-            name: 'beatmap url',
+            name: 'beatmap',
             description: 'Beatmap ID or link',
             type: 'string',
             required: false

@@ -74,7 +74,7 @@ module.exports = {
     ],
     options: [
         {
-            name: 'beatmap url',
+            name: 'beatmap',
             description: 'The url of the beatmap to calculate pp for',
             type: 'string',
             required: true

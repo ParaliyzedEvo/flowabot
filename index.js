@@ -328,14 +328,14 @@ function onMessage(msg){
 
     argv[0] = argv[0].substr(helper.prefix.length);
 
-    if(helper.debug)
-        helper.log(msg.author.username, ':', msg.content);
-
     if(msg.guild && Array.isArray(config.blacklist) && config.blacklist.includes(msg.guild.id)){
         if(helper.debug)
             helper.log(`Ignored command in blacklisted server: ${msg.guild.id} (${msg.guild.name})`);
         return;
     }
+
+    if(helper.debug)
+        helper.log(msg.author.username, ':', msg.content);
 
     commands.forEach(command => {
         let check_command = checkCommand(msg, command);
@@ -466,16 +466,22 @@ async function syncSlashCommandsForGuild(guild){
         const existing = await guild.commands.fetch();
 
         for(const [id, cmd] of existing){
-            if(ownNames.has(cmd.name) && !desired.find(d => d.name === cmd.name))
-                await guild.commands.delete(id);
+            if(ownNames.has(cmd.name) && !desired.find(d => d.name === cmd.name)){
+                try { await guild.commands.delete(id); }
+                catch(err){ helper.error(`Failed to delete ${cmd.name}:`, err); }
+            }
         }
 
         for(const cmdData of desired){
             const match = existing.find(c => c.name === cmdData.name);
-            if(match)
-                await guild.commands.edit(match.id, cmdData);
-            else
-                await guild.commands.create(cmdData);
+            try {
+                if(match)
+                    await guild.commands.edit(match.id, cmdData);
+                else
+                    await guild.commands.create(cmdData);
+            }catch(err){
+                helper.error(`Failed to sync command ${cmdData.name}:`, err);
+            }
         }
     }catch(err){
         helper.error(err);

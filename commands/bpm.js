@@ -25,7 +25,7 @@ module.exports = {
 
     options: [
         {
-            name: 'beatmap url',
+            name: 'beatmap',
             description: 'URL of the beatmap to display BPM graph for',
             type: 'string',
             required: false

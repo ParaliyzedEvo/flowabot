@@ -65,7 +65,7 @@ module.exports = {
 
     options: [
         {
-            name: 'beatmap url',
+            name: 'beatmap',
             description: 'URL of the beatmap to calculate score for',
             type: 'string',
             required: true
