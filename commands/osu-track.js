@@ -22,7 +22,7 @@ module.exports = {
             required: true
         },
         {
-            name: 'top play limit',
+            name: 'top_play_limit',
             description: 'Number of top plays to track (1-100, default 50)',
             type: 'string',
             required: false

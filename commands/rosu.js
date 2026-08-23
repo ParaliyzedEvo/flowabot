@@ -78,7 +78,7 @@ module.exports = {
             required: false
         },
         {
-            name: 'clock rate',
+            name: 'clock_rate',
             description: 'Custom clock/speed rate (e.g. 1.2*, or decimal + x like 1.2x)',
             type: 'string',
             required: false
@@ -108,13 +108,13 @@ module.exports = {
             required: false
         },
         {
-            name: 'large tick hits',
+            name: 'large_tick_hits',
             description: 'Number of large tick hits, for lazer scoring (e.g. 5L)',
             type: 'string',
             required: false
         },
         {
-            name: 'slider tail hits',
+            name: 'slider_tail_hits',
             description: 'Number of slider tail hits, for lazer scoring (e.g. 3S)',
             type: 'string',
             required: false

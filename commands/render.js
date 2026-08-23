@@ -85,19 +85,19 @@ module.exports = {
             required: false
         },
         {
-            name: 'hd / hidden',
+            name: 'hd/hidden',
             description: 'Render with Hidden mod visuals applied',
             type: 'boolean',
             required: false
         },
         {
-            name: 'tc / traceable',
+            name: 'tc/traceable',
             description: 'Render with Traceable mod visuals applied',
             type: 'boolean',
             required: false
         },
         {
-            name: 'fl / flashlight',
+            name: 'fl/flashlight',
             description: 'Render with Flashlight mod visuals applied',
             type: 'boolean',
             required: false
@@ -127,7 +127,7 @@ module.exports = {
             required: false
         },
         {
-            name: 'speed multiplier',
+            name: 'speed',
             description: 'Playback speed as a multiplier (e.g. 1.5*)',
             type: 'string',
             required: false
@@ -193,7 +193,7 @@ module.exports = {
             required: false
         },
         {
-            name: 'combo / speed',
+            name: 'combo/speed',
             description: 'Combo to seek to (e.g. 353x) or speed multiplier if decimal (e.g. 1.5x)',
             type: 'string',
             required: false

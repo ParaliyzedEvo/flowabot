@@ -22,7 +22,7 @@ module.exports = {
 
     options: [
         {
-            name: 'emote name',
+            name: 'emote',
             description: 'Name of the BTTV emote to display',
             type: 'string',
             required: true

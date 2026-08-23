@@ -24,7 +24,7 @@ module.exports = {
             required: true
         },
         {
-            name: 'beat snap divisor',
+            name: 'beat_snap_divisor',
             description: 'Beat snap divisor (e.g. 1/4)',
             type: 'string',
             required: true
