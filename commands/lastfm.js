@@ -72,12 +72,12 @@ module.exports = {
 
             lastFm.defaults.params.api_key = process.env.LAST_FM_KEY ?? config.credentials.last_fm_key;
 
-            if(argv.length > 2){
+            if(argv.length > 2 && argv[2] !== ''){
                 if(Object.keys(periods).includes(argv[2])){
                     period = argv[2];
                 }else{
-                    msg.channel.send(`Invalid time period! (\`${Object.keys(periods).join(', ')})`);
-                    return false;
+                    reject(`Invalid time period! (\`${Object.keys(periods).join(', ')})`);
+                    return;
                 }
             }
 

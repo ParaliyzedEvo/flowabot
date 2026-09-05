@@ -35,7 +35,7 @@ module.exports = {
             let embed;
 
             // If username is provided, skip presence check and go straight to Last.fm
-            if(argv.length >= 2) {
+            if(argv.length >= 2 && argv[1] !== '') {
                 // Jump to Last.fm lookup
                 lastFm.defaults.params.api_key = config.credentials.last_fm_key;
 
@@ -171,7 +171,7 @@ module.exports = {
                 return true;
             }
 
-            if(argv.length < 2){
+            if(argv.length < 2 || argv[1] === ''){
                 reject('Currently not sharing any listening status. Please specify a Last.fm username.')
                 return false;
             }
