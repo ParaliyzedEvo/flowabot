@@ -20,26 +20,19 @@ module.exports = {
 
     call: obj => {
         return new Promise((resolve, reject) => {
-            let { msg, user_ign } = obj;
+            let { msg, argv, user_ign } = obj;
 
-            let split = helper.splitWithTail(msg.content, ' ', 1);
-
-            if(split.length < 2){
-                reject(helper.commandHelp('ign-set'));
-                return false;
-            }
-
-            let ign = split[1].replace(/\+/g, " ");
+            let ign = argv.slice(1).join(' ').replace(/\+/g, " ");
             let user_id = msg.author.id;
 
             if(ign.length == 0){
                 reject(helper.commandHelp('ign-set'));
-                return false;
+                return;
             }
 
             if(!helper.validUsername(ign)){
                 reject('Not a valid osu! username!');
-                return false;
+                return;
             }
 
             user_ign[user_id] = ign;
@@ -48,7 +41,7 @@ module.exports = {
             let author = msg.author.username.endsWith('s') ?
                 `${msg.author.username}'`: `${msg.author.username}'s`;
 
-            msg.channel.send(`${author} ingame name set to ${ign}`);
+            resolve(`${author} ingame name set to ${ign}`);
         });
     }
 };

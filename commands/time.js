@@ -8,6 +8,9 @@ const Nominatim = axios.create({
     baseURL: 'https://nominatim.openstreetmap.org/',
     params: {
         format: 'json'
+    },
+    headers: {
+        'User-Agent': 'flowabot (https://github.com/YOUR_REPO_OR_CONTACT)'
     }
 });
 
@@ -36,8 +39,10 @@ module.exports = {
             let { argv } = obj;
             let zoneName = 'utc';
 
-            if(argv.length == 1)
+            if(argv.length == 1){
                 resolve(`${DateTime.now().toUTC().toFormat('HH:mm, MMM dd')} (UTC)`);
+                return;
+            }
 
             let q = argv.slice(1).join(" ");
 
@@ -56,6 +61,7 @@ module.exports = {
                     reject("Couldn't find this place");
                 }
             }).catch(err => {
+                helper.error(err);
                 reject("An error occurred fetching the place");
             });
         });

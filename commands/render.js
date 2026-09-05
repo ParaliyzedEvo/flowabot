@@ -234,7 +234,7 @@ module.exports = {
 
             argv.map(arg => arg.toLowerCase());
 
-            if (msg.attachments.size > 0) {
+            if (msg.attachments && msg.attachments.size > 0) {
                 const replayAttachment = msg.attachments.find(att => att.name.endsWith('.osr'));
                 if (replayAttachment) osr = replayAttachment.url;
 

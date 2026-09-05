@@ -27,6 +27,7 @@ module.exports = {
             osu.get_tops({ user: top_user, count: 200 }, (err, response) => {
                 if (err) {
                     reject(err);
+                    return;
                 }
 
                 const { tops, user } = response;
@@ -39,6 +40,7 @@ module.exports = {
 
                 if (total < 1000) {
                     reject("Player needs at least 1000 combined ranks to use this command.");
+                    return;
                 }
 
                 let pp = MAX_BONUS;

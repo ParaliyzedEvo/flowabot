@@ -7,7 +7,11 @@ const helper = require('../helper.js');
 const Discord = require('discord.js');
 
 const bttvApi = axios.create({
-    baseURL: 'https://api.betterttv.net/3/emotes/shared'
+    baseURL: 'https://api.betterttv.net/3/emotes/shared',
+    headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+        'Accept': 'application/json'
+    }
 });
 
 module.exports = {
@@ -56,7 +60,10 @@ module.exports = {
 
                     let file = path.resolve(os.tmpdir(), `emote_${emote.code}_${helper.getRandomArbitrary(1000, 9999)}.${emote.imageType}`);
 
-                    axios.get(emoteUrl, {responseType: 'stream'}).then(response => {
+                    axios.get(emoteUrl, {
+                        responseType: 'stream',
+                        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36' }
+                    }).then(response => {
                         let stream = response.data.pipe(fs.createWriteStream(file));
 
                         stream.on('finish', () => {
