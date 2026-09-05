@@ -369,8 +369,16 @@ module.exports = {
                 if(last_beatmap[msg.channel.id].score_id && mods.length == 0)
                     ({ score_id } = last_beatmap[msg.channel.id]);
 
-                if(mods.length == 0)
-                    mods = last_beatmap[msg.channel.id].mods;
+                if(mods.length == 0){
+                    let stored_mods = last_beatmap[msg.channel.id].mods;
+
+                    if(typeof stored_mods === 'string')
+                        mods = (stored_mods.match(/.{1,2}/g) || []).map(m => ({ acronym: m }));
+                    else if(Array.isArray(stored_mods))
+                        mods = stored_mods.map(m => typeof m === 'string' ? { acronym: m } : m);
+                    else
+                        mods = [];
+                }
             }
 
             let download_path = path.resolve(config.osu_cache_path, `${beatmap_id}.osu`);
