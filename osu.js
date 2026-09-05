@@ -22,7 +22,7 @@ const helper = require('./helper.js');
 const { Chart } = require('chart.js/auto');
 const graphCanvas = createCanvas(600, 400);
 
-const { Jimp } = require('jimp');
+const Jimp = require('jimp');
 
 const getFrame = util.promisify(frame.get_frame);
 
