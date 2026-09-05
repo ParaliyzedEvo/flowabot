@@ -328,7 +328,8 @@ function onMessage(msg){
 
     argv[0] = argv[0].substr(helper.prefix.length);
 
-    if(msg.guild && Array.isArray(config.blacklist) && config.blacklist.includes(msg.guild.id)){
+    if(msg.content.startsWith(helper.prefix)
+    && msg.guild && Array.isArray(config.blacklist) && config.blacklist.includes(msg.guild.id)){
         if(helper.debug)
             helper.log(`Ignored command in blacklisted server: ${msg.guild.id} (${msg.guild.name})`);
         return;
@@ -422,7 +423,8 @@ async function onInteraction(interaction){
             }
             default: val = interaction.options.getString(opt.name);
         }
-        argv.push(val === null || val === undefined ? '' : String(val));
+        if(val !== null && val !== undefined)
+            argv.push(String(val));
     });
 
     await interaction.deferReply();
