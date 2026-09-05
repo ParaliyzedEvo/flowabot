@@ -152,7 +152,7 @@ if((process.env.OSU_CLIENT_ID ?? config.credentials.client_id)
     osu.init(client, process.env.OSU_CLIENT_ID ?? config.credentials.client_id, process.env.OSU_CLIENT_SECRET ?? config.credentials.client_secret, last_beatmap);
 
 function checkCommand(msg, command){
-    if(!msg.content.startsWith(helper.prefix))
+    if(!helper.prefix.some(prefix => msg.content.startsWith(prefix)))
         return false;
 
 	if(msg.author.bot && msg.webhookId == null)
@@ -162,7 +162,7 @@ function checkCommand(msg, command){
 
     let command_match = false;
 
-    let msg_check = msg.content.toLowerCase().substr(helper.prefix.length).trim();
+    let msg_check = msg.content.toLowerCase().substr(helper.prefix[0].length).trim();
 
     let commands = command.command;
 
@@ -295,7 +295,7 @@ async function loadCommands(){
 					command.command = [command.command];
 
 				console.log('');
-				console.log(chalk.yellow(`${helper.prefix}${command.command[0]} was not enabled:`));
+				console.log(chalk.yellow(`${helper.prefix[0]}${command.command[0]} was not enabled:`));
 				unavailability_reason.forEach(reason => {
 					console.log(chalk.yellow(reason));
 				});
