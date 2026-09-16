@@ -23,7 +23,7 @@
     "dependencies": {
         "@dmzoneill/urban-dictionary": "^3.0.3",
         "@napi-rs/canvas": "^1.0.9",
-        "@twurple/api": "^8.1.4",
+        "@twurple/api": "^8.2.0",
         "@twurple/auth": "^8.1.4",
         "axios": "^1.20.0",
         "booba": "^0.0.19",
