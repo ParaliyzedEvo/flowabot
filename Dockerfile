@@ -1,4 +1,4 @@
-FROM node:26.3.0-bullseye AS builder
+FROM node:26.9.0-bullseye AS builder
 
 WORKDIR /build
 
