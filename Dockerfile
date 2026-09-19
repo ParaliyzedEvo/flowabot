@@ -46,7 +46,7 @@ RUN git clone https://github.com/Francesco149/oppai.git \
     && ./build.sh \
     && install -Dm 755 oppai /usr/bin/oppaiold
 
-FROM node:26.3.0-slim
+FROM node:26.9.0-slim
 
 WORKDIR /app
 
