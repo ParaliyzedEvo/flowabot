@@ -18,7 +18,7 @@ RUN apt-get update && apt-get install -y \
 # Install .NET SDK
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh \
     && chmod +x dotnet-install.sh \
-    && ./dotnet-install.sh --channel 8.0 \
+    && ./dotnet-install.sh --channel 10.0 \
     && rm dotnet-install.sh
 
 ENV PATH="/root/.dotnet:${PATH}"
@@ -71,7 +71,7 @@ RUN echo "deb http://archive.debian.org/debian bullseye main" >> /etc/apt/source
 # .NET runtime ONLY
 RUN wget https://dot.net/v1/dotnet-install.sh -O dotnet-install.sh \
     && chmod +x dotnet-install.sh \
-    && ./dotnet-install.sh --runtime dotnet --channel 8.0 \
+    && ./dotnet-install.sh --runtime dotnet --channel 10.0 \
     && rm dotnet-install.sh
 
 ENV PATH="/root/.dotnet:${PATH}"
