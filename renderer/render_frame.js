@@ -40,7 +40,7 @@ const BEATMAP_MIRRORS = process.env.BEATMAP_MIRRORS ? process.env.BEATMAP_MIRROR
 
 async function copyDir(src,dest) {
     const entries = await fs.promises.readdir(src, {withFileTypes: true});
-    await fs.promises.mkdir(dest);
+    await fs.promises.mkdir(dest, { recursive: true });
     for(let entry of entries) {
         const srcPath = path.join(src, entry.name);
         const destPath = path.join(dest, entry.name);
@@ -776,6 +776,7 @@ module.exports = {
 			const encodingProcessStart = Date.now();
 
 			ffmpegProcess = spawn(ffmpeg, ffmpeg_args, { shell: true });
+			((p) => p.on('error', err => { p.removeAllListeners('close'); helper.error(err); resolveRender("Error encoding video").catch(console.error); }))(ffmpegProcess);
 
 			ffmpegProcess.on('close', async code => {
 				if(code > 0){
@@ -847,6 +848,7 @@ module.exports = {
 				const encodingProcessStart = Date.now();
 
 				ffmpegProcess = spawn(ffmpeg, ffmpeg_args, { shell: true });
+				((p) => p.on('error', err => { p.removeAllListeners('close'); helper.error(err); resolveRender("Error encoding video").catch(console.error); }))(ffmpegProcess);
 
 				ffmpegProcess.on('close', async code => {
 					if(code > 0){

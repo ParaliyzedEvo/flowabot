@@ -773,8 +773,8 @@ async function getScore(recent_raw, cb){
         best_score = response.data.score
         best_score.position = response.data.position
     } catch(e) {
-        best_score = e.response.data.score ?? {}
-        best_score.position = e.response.data.position ?? 0
+        best_score = e.response?.data?.score ?? {}
+        best_score.position = e.response?.data?.position ?? 0
     }
 
     Promise.all(requests).then(results => {
@@ -1136,7 +1136,7 @@ async function getUserId(u){
     try {
         res = await api.get(`/users/${username}/osu`, { params: { key: "user" } });
     } catch (err) {
-        if(err.response.status == 404) {
+        if(err.response?.status == 404) {
             if(retries < 1) {
                 retries += 1
                 username = username.replace(/_/g, " ")
@@ -1213,7 +1213,7 @@ module.exports = {
         try {
             res = await api.get(`/users/${username}/osu`, { params: { key: "user" } });
         } catch (error) {
-            if (error.response.status == 404) cb("User not found. 😔")
+            if (error.response?.status == 404) cb("User not found. 😔")
             else cb("Something went wrong. 😔")
             return false
         }
@@ -1344,7 +1344,7 @@ module.exports = {
             }, 350);
         })
         .catch((error) => {
-            if (error.response.status == 404) cb("User not found. 😔")
+            if (error.response?.status == 404) cb("User not found. 😔")
             else cb("⚠️ Something went wrong. ⚠️")
             return false
         });
@@ -2424,7 +2424,7 @@ module.exports = {
             retries = 0
             cb(null, embed);
         }).catch(err => {
-			if(err.response.status == 404) {
+			if(err.response?.status == 404) {
                 if(retries < 1) {
                     retries += 1
                     options.u = options.u.replace(/_/g, " ")

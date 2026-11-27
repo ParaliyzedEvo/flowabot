@@ -71,9 +71,9 @@ module.exports = {
             argv.slice(1).forEach(arg => {
                 if(arg.startsWith('+')){
                     mods = arg.toUpperCase().substr(1).match(/.{1,2}/g);
-                }else if(arg.startsWith('ar')){
+                }else if(arg.toLowerCase().startsWith('ar')){
                     ar = parseFloat(arg.substr(2));
-                }else if(arg.startsWith('cs')){
+                }else if(arg.toLowerCase().startsWith('cs')){
                     cs = parseFloat(arg.substr(2));
                 }else if(arg.toLowerCase() == 'aim'){
                     type = 'aim';
@@ -140,7 +140,7 @@ module.exports = {
                     }).catch(err => {
                         reject(err);
                     });
-                });
+                }).catch(reject);
             });
         });
     }

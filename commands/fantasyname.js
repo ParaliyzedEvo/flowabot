@@ -41,7 +41,7 @@ module.exports = {
                 length = argv[2];
 
             namegen.getFantasyName(type, length, msg.author.username).then(name => {
-                msg.channel.send(name);
+                resolve(name);
             }).catch(err => {
                 reject(err);
             });
