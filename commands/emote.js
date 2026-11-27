@@ -37,7 +37,6 @@ module.exports = {
         }
     ],
     
-    call: obj => {
     call: async obj => {
         let { msg, argv, client } = obj;
 
