@@ -90,7 +90,7 @@ function makeMsg(input) {
         channel: {
             id: tester.TEST_CHANNEL_ID,
             type: 0,
-            send: async payload => { sent.push(payload); return { id: 'x', edit: async () => {}, delete: async () => {} }; },
+            send: async payload => { sent.push(payload); return tester.fakeSentMessage(); },
             messages: { fetch: async () => { throw new Error('mock channel: no message history'); } }
         }
     };

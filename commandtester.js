@@ -22,8 +22,12 @@ const TEST_USER_ID = 'flowabot-test-user';
 const SIDE_EFFECT_SKIP = {
     'osu-track': 'changes the osu! tracking list',
     'osu-untrack': 'changes the osu! tracking list',
-    'ign-set': 'overwrites a stored osu! username',
-    'testall': 'would run itself recursively'
+    'ign-set': 'overwrites a stored osu! username'
+};
+
+// Never run, regardless of flags.
+const ALWAYS_SKIP = {
+    'testall': 'would run the whole suite inside itself'
 };
 
 // Extra inputs, typed the way you'd type them after the prefix. Use this for
@@ -75,6 +79,28 @@ function errorInfo(err) {
         kind: 'rejected',
         message: clip(util.inspect(err, { depth: 1, breakLength: Infinity }), 200),
         full: util.inspect(err, { depth: 3 })
+    };
+}
+
+// What msg.channel.send() resolves to in tests. Commands such as render call methods on it
+// (e.g. createMessageComponentCollector), so it needs more than id/edit/delete.
+function fakeSentMessage() {
+    const collector = {
+        on() { return collector; },
+        once() { return collector; },
+        stop() {},
+        removeAllListeners() { return collector; }
+    };
+
+    return {
+        id: 'flowabot-test-sent-message',
+        edit: async () => fakeSentMessage(),
+        delete: async () => {},
+        react: async () => {},
+        reply: async () => fakeSentMessage(),
+        createMessageComponentCollector: () => collector,
+        createReactionCollector: () => collector,
+        awaitMessageComponent: () => new Promise(() => {})
     };
 }
 
@@ -167,9 +193,11 @@ function planTests({ modules, filters = [], includeAll = false, config, client }
         if (!matches(mod, file)) continue;
 
         const name = names(mod)[0] ?? file;
-        const skipReason = (!includeAll && SIDE_EFFECT_SKIP[name])
-            ? `skipped by default: ${SIDE_EFFECT_SKIP[name]} (use "all" to include)`
-            : unavailableReasons(mod, { config, client }).join('; ') || null;
+        const skipReason = ALWAYS_SKIP[name]
+            ? `never run: ${ALWAYS_SKIP[name]}`
+            : (!includeAll && SIDE_EFFECT_SKIP[name])
+                ? `skipped by default: ${SIDE_EFFECT_SKIP[name]} (use "all" to include)`
+                : unavailableReasons(mod, { config, client }).join('; ') || null;
 
         if (skipReason) {
             skipped.push({ command: name, file, reason: skipReason });
@@ -344,7 +372,11 @@ async function runCase(testCase, ctx) {
     } catch (err) {
         const info = errorInfo(err);
 
-        if (err?.isTimeout) {
+        if (err?.isTimeout && sent.length > 0) {
+            result.status = 'WARN';
+            result.detail = `${err.message}, but it already sent ${sent.length} message(s) via channel.send `
+                + `(never resolves, or just slow; as a slash command it would hang on "thinking...")`;
+        } else if (err?.isTimeout) {
             result.status = 'TIMEOUT';
             result.detail = err.message;
         } else {
@@ -442,12 +474,19 @@ async function runTests(options) {
             }
 
             current = { asyncErrors: [], logs: [] };
+            const ignBefore = JSON.stringify(user_ign);
 
             const result = await runCase(testCase, {
                 makeMsg, client, user_ign, last_beatmap, last_message, timeoutMs, deliver
             });
 
             if (settleMs) await sleep(settleMs);
+
+            // A command that changed stored usernames (ign-set) must not affect later tests.
+            if (JSON.stringify(user_ign) !== ignBefore) {
+                Object.keys(user_ign).forEach(k => delete user_ign[k]);
+                Object.assign(user_ign, JSON.parse(ignBefore));
+            }
 
             if (current.logs.length) result.logs = current.logs;
 
@@ -476,17 +515,20 @@ async function runTests(options) {
         // Don't leave test data in the persisted state.
         if (!hadSeed) delete last_beatmap[TEST_CHANNEL_ID];
         delete last_message[TEST_CHANNEL_ID];
+        delete user_ign[TEST_USER_ID];
         try {
             const helper = require('./helper.js');
             helper.setItem('last_beatmap', JSON.stringify(last_beatmap));
             helper.setItem('last_message', JSON.stringify(last_message));
+            helper.setItem('user_ign', JSON.stringify(user_ign));
         } catch { /* storage cleanup is best-effort */ }
     }
 
     const counts = { PASS: 0, WARN: 0, FAIL: 0, TIMEOUT: 0, SKIP: 0 };
     results.forEach(r => counts[r.status]++);
+    const bugs = results.filter(r => r.status === 'FAIL' && r.kind !== 'rejected').length;
 
-    return { results, counts, orphanErrors: orphanErrors.map(errorInfo), startedAt, durationMs: Date.now() - t0 };
+    return { results, counts, bugs, orphanErrors: orphanErrors.map(errorInfo), startedAt, durationMs: Date.now() - t0 };
 }
 
 const COLORS = { PASS: '32', WARN: '33', FAIL: '31', TIMEOUT: '35', SKIP: '90' };
@@ -502,7 +544,9 @@ function formatLine(r, color = false) {
 
 function formatSummaryLine(run) {
     const c = run.counts;
-    return `PASS ${c.PASS} · WARN ${c.WARN} · FAIL ${c.FAIL} · TIMEOUT ${c.TIMEOUT} · SKIP ${c.SKIP}`
+    const fail = run.bugs === undefined ? `FAIL ${c.FAIL}`
+        : `FAIL ${c.FAIL} (${run.bugs} crash/invalid, ${c.FAIL - run.bugs} error-message)`;
+    return `PASS ${c.PASS} · WARN ${c.WARN} · ${fail} · TIMEOUT ${c.TIMEOUT} · SKIP ${c.SKIP}`
         + `  (${(run.durationMs / 1000).toFixed(1)}s)`;
 }
 
@@ -569,6 +613,6 @@ function formatDiscordSummary(run, limit = 1800) {
 
 module.exports = {
     TEST_CHANNEL_ID, TEST_USER_ID,
-    loadCommandModules, planTests, runTests,
+    loadCommandModules, planTests, runTests, fakeSentMessage,
     formatLine, formatSummaryLine, formatText, formatDiscordSummary, writeReports
 };

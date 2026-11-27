@@ -55,7 +55,7 @@ module.exports = {
                 get(target, prop) {
                     if (prop === 'id') return tester.TEST_CHANNEL_ID;
                     if (prop === 'send')
-                        return async payload => { sent.push(payload); return { id: 'x', edit: async () => {}, delete: async () => {} }; };
+                        return async payload => { sent.push(payload); return tester.fakeSentMessage(); };
                     const value = target[prop];
                     return typeof value === 'function' ? value.bind(target) : value;
                 }
