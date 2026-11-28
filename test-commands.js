@@ -28,7 +28,7 @@ const helper = require('./helper.js');
 const osu = require('./osu.js');
 const tester = require('./commandtester.js');
 const argv = process.argv.slice(2);
-const flags = { all: false, list: false, verbose: false, timeout: 30, user: process.env.TEST_OSU_USER ?? 'nathan_on_osu', filters: [] };
+const flags = { all: false, list: false, verbose: false, timeout: 30, user: process.env.TEST_OSU_USER ?? 'Paraliyzed_evo', filters: [] };
 
 for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
