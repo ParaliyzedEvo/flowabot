@@ -87,7 +87,11 @@ module.exports = {
                 }
             }).catch(err => {
                 helper.error(err);
-                reject(`BTTV emote ${q} not found.`);
+
+                if ([401, 403].includes(err.response?.status))
+                    reject("BTTV's search API now requires a login, so I can't search it right now.");
+                else
+                    reject(`BTTV emote ${q} not found.`);
             });
         });
     }
