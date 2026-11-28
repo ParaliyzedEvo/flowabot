@@ -1,15 +1,17 @@
-const axios = require('axios');
-const { DateTime, Duration } = require('luxon');
-
 const config = require('../config.json');
 
-const twitchHelix = axios.create({
-    baseURL: 'https://api.twitch.tv/helix',
-    headers: {
-        'Authorization': `Bearer ${config.credentials.twitch_token}`,
-        'Client-ID': config.credentials.twitch_client_id
-    }
-});
+const { Duration } = require('luxon');
+const { AppTokenAuthProvider } = require('@twurple/auth');
+const { ApiClient } = require('@twurple/api');
+
+// An app access token is requested and renewed automatically by twurple, so unlike the
+// fixed credentials.twitch_token this never expires while the bot is running.
+const authProvider = new AppTokenAuthProvider(
+    process.env.TWITCH_CLIENT_ID ?? config.credentials.twitch_client_id,
+    process.env.TWITCH_CLIENT_SECRET ?? config.credentials.twitch_client_secret
+);
+
+const apiClient = new ApiClient({ authProvider });
 
 module.exports = {
     command: ['uptime', 'downtime'],
@@ -26,7 +28,8 @@ module.exports = {
             result: "Returns ninja's uptime or downtime."
         }
     ],
-    configRequired: ['credentials.twitch_client_id', 'credentials.twitch_token'],
+    configRequired: ['credentials.twitch_client_id', 'credentials.twitch_client_secret'],
+    envRequired: ['TWITCH_CLIENT_ID', 'TWITCH_CLIENT_SECRET'],
 
     options: [
         {
@@ -37,74 +40,62 @@ module.exports = {
         }
     ],
 
-    call: obj => {
-        return new Promise((resolve, reject) => {
-            const { argv } = obj;
-            const channel_name = argv[1];
+    call: async obj => {
+        const { argv } = obj;
+        const channel_name = argv[1];
 
-            twitchHelix.get(`/users`, {
-                params: { login: channel_name }
-            }).then(userResponse => {
-                const users = userResponse.data.data;
+        let user;
+        try {
+            user = await apiClient.users.getUserByName(channel_name);
+        } catch (err) {
+            console.error(err);
+            throw 'Error fetching user information.';
+        }
 
-                if (users.length === 0) {
-                    reject('User not found');
-                    return;
-                }
+        if (!user)
+            throw 'User not found';
 
-                const user_id = users[0].id;
+        let stream;
+        try {
+            stream = await apiClient.streams.getStreamByUserId(user.id);
+        } catch (err) {
+            console.error(err);
+            throw 'Error fetching stream information.';
+        }
 
-                twitchHelix.get(`/streams`, {
-                    params: { user_id }
-                }).then(streamResponse => {
-                    const streams = streamResponse.data.data;
+        if (stream) {
+            const uptimeMs = Date.now() - stream.startDate.getTime();
+            const duration = Duration.fromMillis(uptimeMs);
 
-                    if (streams.length > 0) {
-                        const stream = streams[0];
-                        const uptimeMs = Date.now() - new Date(stream.started_at).getTime();
-                        const duration = Duration.fromMillis(uptimeMs);
+            const uptime = uptimeMs > 60 * 60 * 1000
+                ? duration.toFormat("h'h 'm'm'")
+                : duration.toFormat("m'm'");
 
-                        const uptime = uptimeMs > 60 * 60 * 1000
-                            ? duration.toFormat("h'h 'm'm'")
-                            : duration.toFormat("m'm'");
+            return `${channel_name} has been live for ${uptime}`;
+        }
 
-                        resolve(`${channel_name} has been live for ${uptime}`);
-                    } else {
-                        twitchHelix.get(`/videos`, {
-                            params: { user_id, type: 'archive', first: 1 }
-                        }).then(videoResponse => {
-                            const videos = videoResponse.data.data;
+        let videos;
+        try {
+            ({ data: videos } = await apiClient.videos.getVideosByUser(user.id, { type: 'archive', limit: 1 }));
+        } catch (err) {
+            console.error(err);
+            throw 'Error fetching VOD information.';
+        }
 
-                            if (videos.length > 0) {
-                                const vod = videos[0];
-                                const downtimeMs = Date.now() - new Date(vod.created_at).getTime();
-                                const duration = Duration.fromMillis(downtimeMs);
+        if (videos.length === 0)
+            throw `${channel_name} hasn't streamed recently or has VODs disabled.`;
 
-                                const downtime = downtimeMs < 60 * 1000
-                                    ? duration.toFormat("s's'")
-                                    : downtimeMs < 60 * 60 * 1000
-                                        ? duration.toFormat("m'm'")
-                                        : downtimeMs < 24 * 60 * 60 * 1000
-                                            ? duration.toFormat("h'h'")
-                                            : duration.toFormat("d'd' h'h'");
+        const downtimeMs = Date.now() - videos[0].creationDate.getTime();
+        const duration = Duration.fromMillis(downtimeMs);
 
-                                resolve(`${channel_name} hasn't streamed in ${downtime}`);
-                            } else {
-                                reject(`${channel_name} hasn't streamed recently or has VODs disabled.`);
-                            }
-                        }).catch(err => {
-                            console.error(err);
-                            reject('Error fetching VOD information.');
-                        });
-                    }
-                }).catch(err => {
-                    console.error(err);
-                    reject('Error fetching stream information.');
-                });
-            }).catch(err => {
-                console.error(err);
-                reject('Error fetching user information.');
-            });
-        });
+        const downtime = downtimeMs < 60 * 1000
+            ? duration.toFormat("s's'")
+            : downtimeMs < 60 * 60 * 1000
+                ? duration.toFormat("m'm'")
+                : downtimeMs < 24 * 60 * 60 * 1000
+                    ? duration.toFormat("h'h'")
+                    : duration.toFormat("d'd' h'h'");
+
+        return `${channel_name} hasn't streamed in ${downtime}`;
     }
 };
