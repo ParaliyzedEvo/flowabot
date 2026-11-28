@@ -927,7 +927,7 @@ module.exports = {
 				});
 
 				ffmpegProcess.stderr.on('data', data => {
-					if(!line.startsWith('frame=')) helper.error('[ffmpeg] ' + line);
+					const line = data.toString();
 
 					if(!line.startsWith('frame='))
 						return;

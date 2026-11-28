@@ -41,6 +41,9 @@ const EXTRA_INPUTS = {
     w: ['w;']
 };
 
+// Commands that legitimately take longer than the default per-test timeout (milliseconds).
+const TIMEOUT_OVERRIDES = { scamge: 240000, render: 120000 };
+
 // Beatmap seeded for the fake test channel so `with`, `compare`, `render`... have something to work on.
 const SEED_LAST_BEATMAP = { beatmap_id: 75, mods: [], acc: 100, fail_percent: 1, rank: 'A' };
 
@@ -306,7 +309,9 @@ function looksLikeUsageHelp(response) {
 
 async function runCase(testCase, ctx) {
     const { mod, file, command, input, auto } = testCase;
-    const { makeMsg, client, user_ign, last_beatmap, last_message, timeoutMs, deliver } = ctx;
+    const { makeMsg, client, user_ign, last_beatmap, last_message, deliver } = ctx;
+    // Some commands (scamge, render) are legitimately slow, so give them a longer limit than the default.
+    const timeoutMs = ctx.timeoutMs ? Math.max(ctx.timeoutMs, TIMEOUT_OVERRIDES[command] ?? 0) : 0;
 
     const argv = input.split(' ');
     const { msg, sent } = makeMsg(input);
