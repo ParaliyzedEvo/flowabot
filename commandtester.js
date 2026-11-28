@@ -458,7 +458,15 @@ async function runTests(options) {
             };
             helper.log = grab('log');
             helper.error = grab('error');
-            restoreLogs = () => { helper.log = original.log; helper.error = original.error; };
+            const originalConsole = { error: console.error, warn: console.warn };
+            console.error = grab('console.error');
+            console.warn = grab('console.warn');
+            restoreLogs = () => {
+                helper.log = original.log;
+                helper.error = original.error;
+                console.error = originalConsole.error;
+                console.warn = originalConsole.warn;
+            };
         } catch { /* helper unavailable: nothing to capture */ }
     }
 

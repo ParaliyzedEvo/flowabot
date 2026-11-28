@@ -776,7 +776,7 @@ module.exports = {
 			const encodingProcessStart = Date.now();
 
 			ffmpegProcess = spawn(ffmpeg, ffmpeg_args, { shell: true });
-			((p) => p.on('error', err => { p.removeAllListeners('close'); helper.error(err); resolveRender("Error encoding video").catch(console.error); }))(ffmpegProcess);
+			((p) => p.on('error', err => { p.removeAllListeners('close'); helper.error(err); resolveRender("Error encoding video").catch(console.error); }))(ffmpegProcess); ffmpegProcess.stdin.on('error', err => helper.error(err));
 
 			ffmpegProcess.on('close', async code => {
 				if(code > 0){
@@ -848,7 +848,7 @@ module.exports = {
 				const encodingProcessStart = Date.now();
 
 				ffmpegProcess = spawn(ffmpeg, ffmpeg_args, { shell: true });
-				((p) => p.on('error', err => { p.removeAllListeners('close'); helper.error(err); resolveRender("Error encoding video").catch(console.error); }))(ffmpegProcess);
+				((p) => p.on('error', err => { p.removeAllListeners('close'); helper.error(err); resolveRender("Error encoding video").catch(console.error); }))(ffmpegProcess); ffmpegProcess.stdin.on('error', err => helper.error(err));
 
 				ffmpegProcess.on('close', async code => {
 					if(code > 0){
@@ -927,7 +927,7 @@ module.exports = {
 				});
 
 				ffmpegProcess.stderr.on('data', data => {
-					const line = data.toString();
+					if(!line.startsWith('frame=')) helper.error('[ffmpeg] ' + line);
 
 					if(!line.startsWith('frame='))
 						return;
